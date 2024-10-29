@@ -42,6 +42,10 @@ public class Item {
     @JsonFormat(pattern = "dd/MM/yyyy")
     private Date lendStart;
 
+    @Setter
+    @Getter
+    private String itemImageUrl;
+
     @Version
     @Getter
     @Setter
