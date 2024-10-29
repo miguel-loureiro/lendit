@@ -19,14 +19,16 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create the 'items' table
 CREATE TABLE IF NOT EXISTS items (
-    id SERIAL PRIMARY KEY,
-    designation VARCHAR(255) UNIQUE NOT NULL,
-    brand VARCHAR(70) NOT NULL,          -- Removed UNIQUE as it's not in the entity
-    barcode VARCHAR(13) UNIQUE NOT NULL,
-    price VARCHAR(10),
-    lend_start TIMESTAMP,                     -- Changed to match entity field name
-    item_image_url TEXT,                 -- Changed to match entity field name
-    version BIGINT
+    id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
+    designation VARCHAR(255) NOT NULL UNIQUE,  -- Designation must be unique and not null
+    barcode VARCHAR(13) NOT NULL UNIQUE,  -- Barcode must be unique and not null
+    brand VARCHAR(255) NOT NULL,  -- Brand cannot be null
+    category VARCHAR(50) NOT NULL,  -- Category cannot be null (consider using ENUM if applicable)
+    purchase_price DECIMAL(10, 2) NOT NULL,  -- Purchase price with precision and scale
+    stock_quantity INTEGER NOT NULL,  -- Stock quantity cannot be null
+    version BIGINT,  -- Version column for optimistic locking
+    CHECK (stock_quantity >= 0),  -- Constraint to ensure stock quantity is non-negative
+    CHECK (purchase_price >= 0)  -- Constraint to ensure purchase price is non-negative
 );
 
 -- Create the many-to-many relationship table between users and items
