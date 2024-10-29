@@ -21,17 +21,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS items (
     id SERIAL PRIMARY KEY,
     designation VARCHAR(255) UNIQUE NOT NULL,
-    brand VARCHAR(70) UNIQUE NOT NULL,
+    brand VARCHAR(70) NOT NULL,          -- Removed UNIQUE as it's not in the entity
     barcode VARCHAR(13) UNIQUE NOT NULL,
     price VARCHAR(10),
-    lend_start DATE,
-    cover_image_url TEXT,
+    lend_start TIMESTAMP,                     -- Changed to match entity field name
+    item_image_url TEXT,                 -- Changed to match entity field name
     version BIGINT
 );
 
 -- Create the many-to-many relationship table between users and items
 CREATE TABLE IF NOT EXISTS user_items (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    book_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, book_id)
+    item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,  -- Changed book_id to item_id
+    PRIMARY KEY (user_id, item_id)                          -- Changed book_id to item_id in PRIMARY KEY
 );

@@ -37,18 +37,22 @@ public class Item {
 
     @Setter
     @Getter
+    @Column
     private String price;
 
+    @Column
     @JsonFormat(pattern = "dd/MM/yyyy")
     private Date lendStart;
 
     @Setter
     @Getter
+    @Column
     private String itemImageUrl;
 
     @Version
     @Getter
     @Setter
+    @Column
     private Long version;
 
     @Getter

@@ -1,6 +1,7 @@
 package com.ims.models;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -13,34 +14,26 @@ import java.util.*;
 @Getter
 public class User implements UserDetails {
 
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
     private Integer id;
 
-    @Getter
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Getter
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @Getter
     @Column(nullable = false)
     private String password;
 
-    @Getter
     @Enumerated(EnumType.STRING)
     private Type type;
 
-    @Setter
-    @Getter
     private String profileImage;
 
     @Version
-    @Getter
     private Long version;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -70,7 +63,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean equals(Object o) {
-
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
@@ -85,26 +77,37 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        // Convert user type to authority
+        return List.of(new SimpleGrantedAuthority("TYPE_" + type.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true; // or implement your own logic
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return true; // or implement your own logic
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true; // or implement your own logic
     }
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return true; // or implement your own logic
     }
 }
