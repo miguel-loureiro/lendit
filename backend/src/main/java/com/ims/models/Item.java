@@ -22,68 +22,50 @@ public class Item {
     private Integer id;
 
     @Column(nullable = false, unique = true)
-    private String designation; // e.g., "ThinkPad X1 Carbon", "Logitech MX Master 3"
+    private String designation;
 
     @Column(nullable = false, unique = true, length = 13)
-    private String barcode; // Standardized EAN-13 barcode
+    private String barcode;
 
     @Column(nullable = false)
-    private String brand; // e.g., "Lenovo", "Dell", "Logitech"
+    private String brand;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Category category; // LAPTOP, DESKTOP, PERIPHERAL, NETWORK_EQUIPMENT, etc.
+    private Category category;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal purchasePrice; // Price in decimal format
+    private BigDecimal purchasePrice = BigDecimal.ZERO; // Default to zero
 
     @Column(nullable = false)
-    private Integer stockQuantity; // Current quantity in stock
+    private Integer stockQuantity = 0; // Default to zero
 
     @Version
     @Column
     private Long version;
 
-    @Getter
     @ManyToMany(mappedBy = "items")
     private Set<User> users = new HashSet<>();
 
+    // Full constructor with default values for version and users
     public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity, Long version, Set<User> users) {
         this.designation = designation;
         this.barcode = barcode;
         this.brand = brand;
         this.category = category;
-        this.purchasePrice = purchasePrice;
-        this.stockQuantity = stockQuantity;
+        this.purchasePrice = (purchasePrice != null) ? purchasePrice : BigDecimal.ZERO;
+        this.stockQuantity = (stockQuantity != null) ? stockQuantity : 0;
         this.version = version;
-        this.users = users;
+        this.users = (users != null) ? users : new HashSet<>();
     }
 
+    // Constructor with essential fields only, setting default values for others
     public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity) {
-        this.designation = designation;
-        this.barcode = barcode;
-        this.brand = brand;
-        this.category = category;
-        this.purchasePrice = purchasePrice;
-        this.stockQuantity = stockQuantity;
+        this(designation, barcode, brand, category, purchasePrice, stockQuantity, null, null);
     }
-
-
-    public enum Category {
-        LAPTOP,
-        DESKTOP,
-        MONITOR,
-        PERIPHERAL,
-        NETWORK_EQUIPMENT,
-        SERVER,
-        STORAGE_DEVICE
-    }
-
-    // Constructor with essential fields
 
     // Default constructor
-    public Item() {
-    }
+    public Item() {}
 
     @PrePersist
     @PreUpdate
@@ -119,5 +101,15 @@ public class Item {
                 ", purchasePrice=" + purchasePrice +
                 ", stockQuantity=" + stockQuantity +
                 '}';
+    }
+
+    public enum Category {
+        LAPTOP,
+        DESKTOP,
+        MONITOR,
+        PERIPHERAL,
+        NETWORK_EQUIPMENT,
+        SERVER,
+        STORAGE_DEVICE
     }
 }
