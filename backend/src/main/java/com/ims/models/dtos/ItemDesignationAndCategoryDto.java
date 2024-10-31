@@ -17,9 +17,9 @@ public class ItemDesignationAndCategoryDto {
     @Setter
     private Item.Category category;
 
-    public ItemDesignationAndCategoryDto(String title, Item.Category categgory) {
+    public ItemDesignationAndCategoryDto(String title, Item.Category category) {
         this.designation = designation;
-        this.category = categgory;
+        this.category = category;
     }
 
     @Override
