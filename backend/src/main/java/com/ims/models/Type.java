@@ -1,5 +1,8 @@
 package com.ims.models;
 
+import lombok.Getter;
+
+@Getter
 public enum Type {
 
     SUPER(4),
@@ -12,10 +15,5 @@ public enum Type {
     Type(int rank) {
 
         this.rank = rank;
-    }
-
-    public int getRank() {
-
-        return this.rank;
     }
 }
