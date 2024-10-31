@@ -47,6 +47,9 @@ public class Item {
     @ManyToMany(mappedBy = "items")
     private Set<User> users = new HashSet<>();
 
+    // Default constructor
+    public Item() {}
+
     // Full constructor with default values for version and users
     public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity, Long version, Set<User> users) {
         this.designation = designation;
@@ -64,8 +67,15 @@ public class Item {
         this(designation, barcode, brand, category, purchasePrice, stockQuantity, null, null);
     }
 
-    // Default constructor
-    public Item() {}
+    // Constructor with minimum fields only, setting default values for others
+    public Item(String designation, Category category) {
+        this.designation = designation;
+        this.barcode = "0000000000000";
+        this.brand = "";
+        this.category = category;
+        this.stockQuantity = 0;
+    }
+
 
     @PrePersist
     @PreUpdate
