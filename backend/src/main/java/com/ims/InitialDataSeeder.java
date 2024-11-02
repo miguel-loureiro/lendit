@@ -1,12 +1,17 @@
 package com.ims;
 
 import com.ims.models.Item;
+import com.ims.models.Role;
+import com.ims.models.User;
 import com.ims.repository.ItemRepository;
+import com.ims.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -18,6 +23,12 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
 
     @Autowired
     private ItemRepository itemRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private static final String[] DESIGNATIONS = {
             "ThinkPad X1 Carbon Gen 9", "MX Master 3", "Dell XPS 13",
@@ -41,7 +52,15 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        addSuperUser();
         seedItems();
+    }
+
+    private void addSuperUser() {
+
+        String encodedPassword = passwordEncoder.encode("superpassword");
+        //String encodedPassword = "superpassword";
+        userRepository.save(new User("superuser", "publixoapagar@gmail.com", encodedPassword, Role.SUPER));
     }
 
     private void seedItems() {

@@ -3,7 +3,7 @@ package com.ims.models;
 import lombok.Getter;
 
 @Getter
-public enum Type {
+public enum Role{
 
     SUPER(4),
     MANAGER(3),
@@ -12,7 +12,7 @@ public enum Type {
 
     private final int rank;
 
-    Type(int rank) {
+    Role(int rank) {
 
         this.rank = rank;
     }

@@ -2,7 +2,7 @@ package com.ims.services;
 
 import com.ims.models.CustomUserDetails;
 import com.ims.models.Item;
-import com.ims.models.Type;
+import com.ims.models.Role;
 import com.ims.models.User;
 import com.ims.models.dtos.RegisterUserDto;
 import com.ims.models.dtos.UserDto;
@@ -20,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -59,12 +60,12 @@ public class UserService {
         Object principal = authentication.getPrincipal();
 
         CustomUserDetails currentUserDetails = (CustomUserDetails) principal;
-        User currentUser = currentUserDetails.getUser();
-        Type newUserType = input.getType();
+        User currentUser = currentUserDetails.user();
+        Role newUserRole = input.getRole();
 
         User targetUser = new User();
         targetUser.setUsername(input.getUsername());
-        targetUser.setType(newUserType);
+        targetUser.setRole(newUserRole);
 
         if (!hasPermissionToCreateUser(currentUser, targetUser)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -80,13 +81,13 @@ public class UserService {
         }
 
         User user = new User(input.getUsername(), input.getEmail(),
-                passwordEncoder.encode(input.getPassword()), input.getType());
+                passwordEncoder.encode(input.getPassword()), input.getRole());
         User savedUser = userRepository.save(user);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new UserDto(savedUser));
     }
 
-    public ResponseEntity<Void> deleteUser(String identifier, String type) throws IOException {
+    public ResponseEntity<Void> deleteUser(String identifier, String Role) throws IOException {
 
         Optional<User> currentUserOpt = getCurrentUser();
 
@@ -97,7 +98,7 @@ public class UserService {
 
         User currentUser = currentUserOpt.get();
 
-        Optional<User> userToDeleteOpt = getUserByIdentifier(identifier, type);
+        Optional<User> userToDeleteOpt = getUserByIdentifier(identifier, Role);
 
         if (userToDeleteOpt.isEmpty()) {
 
@@ -116,7 +117,7 @@ public class UserService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity<UserDto> updateUser(String identifier, String type, UserDto input) throws IOException {
+    public ResponseEntity<UserDto> updateUser(String identifier, String Role, UserDto input) throws IOException {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -130,7 +131,7 @@ public class UserService {
         }
         User currentUser = currentUserOpt.get();
 
-        Optional<User> userToUpdateOpt = getUserByIdentifier(identifier, type);
+        Optional<User> userToUpdateOpt = getUserByIdentifier(identifier, Role);
         if (userToUpdateOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -142,7 +143,7 @@ public class UserService {
 
         userToUpdate.setUsername(input.getUsername());
         userToUpdate.setEmail(input.getEmail());
-        userToUpdate.setType(input.getType());
+        userToUpdate.setRole(input.getRole());
         userToUpdate.setProfileImage(input.getProfileImage());
 
         if (input.getItems() != null) {
@@ -185,9 +186,9 @@ public class UserService {
         return ResponseEntity.ok().build();
     }
 
-    public Optional<User> getUserByIdentifier(String identifier, String type) {
+    public Optional<User> getUserByIdentifier(String identifier, String Role) {
 
-        switch (type) {
+        switch (Role) {
 
             case "id":
                 try {
@@ -204,7 +205,7 @@ public class UserService {
 
                 return userRepository.findByEmail(identifier);
             default:
-                throw new IllegalArgumentException("Invalid identifier type: " + type);
+                throw new IllegalArgumentException("Invalid identifier Role: " + Role);
         }
     }
 
@@ -216,7 +217,7 @@ public class UserService {
 
             CustomUserDetails userDetails = (CustomUserDetails) principal;
 
-            return userRepository.findByIdWithItems(userDetails.getUser().getId());
+            return userRepository.findByIdWithItems(userDetails.user().getId());
         }
 
         return Optional.empty();
@@ -224,26 +225,26 @@ public class UserService {
 
     private boolean hasPermissionToCreateUser(User currentUser, User targetUser) {
 
-        Type currentUserType = currentUser.getType();
-        Type targetUserType = targetUser.getType();
+        Role currentUserRole = currentUser.getRole();
+        Role targetUserRole = targetUser.getRole();
         boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
 
-        return switch (currentUserType) {
+        return switch (currentUserRole) {
             case SUPER -> !isSameUser;
-            case MANAGER -> isSameUser || targetUserType == Type.CLIENT;
+            case MANAGER -> isSameUser || targetUserRole == Role.CLIENT;
             default -> false;
         };
     }
 
     private boolean hasPermissionToDeleteUser(User currentUser, User targetUser) {
 
-        Type currentUserType = currentUser.getType();
-        Type targetUserType = targetUser.getType();
+        Role currentUserRole = currentUser.getRole();
+        Role targetUserRole = targetUser.getRole();
         boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
 
-        return switch (currentUserType) {
+        return switch (currentUserRole) {
             case SUPER -> !isSameUser;
-            case MANAGER -> isSameUser || targetUserType == Type.CLIENT;
+            case MANAGER -> isSameUser || targetUserRole == Role.CLIENT;
             case CLIENT -> isSameUser;
             default -> false;
         };
@@ -251,13 +252,13 @@ public class UserService {
 
     private boolean hasPermissionToUpdateUser(User currentUser, User targetUser) {
 
-        Type currentUserType = currentUser.getType();
-        Type targetUserType = targetUser.getType();
+        Role currentUserRole = currentUser.getRole();
+        Role targetUserRole = targetUser.getRole();
         boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
 
-        return switch (currentUserType) {
+        return switch (currentUserRole) {
             case SUPER -> !isSameUser;
-            case MANAGER-> isSameUser || targetUserType == Type.CLIENT;
+            case MANAGER-> isSameUser || targetUserRole == Role.CLIENT;
             case CLIENT-> isSameUser;
             default -> false;
         };

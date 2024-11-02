@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @NoArgsConstructor
-public class LoginUserRequestDto {
+public class LoginUserDto {
 
         @Getter
         @Setter
@@ -26,7 +26,7 @@ public class LoginUserRequestDto {
         @Pattern(regexp = "(?=.*[a-z])(?=.*\\d)(?=.*[@#$%])(?=.*[A-Z]).{6,16}", message = "The given password does not match the rules")
         private String password;
 
-    public LoginUserRequestDto(String username, String email, String password) {
+    public LoginUserDto(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;

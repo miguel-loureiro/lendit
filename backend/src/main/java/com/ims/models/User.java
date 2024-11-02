@@ -25,11 +25,11 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 60)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Type type;
+    private Role role;
 
     private String profileImage;
 
@@ -54,11 +54,11 @@ public class User implements UserDetails {
     }
 
     // Constructor with all fields except id and books
-    public User(String username, String email, String password, Type type) {
+    public User(String username, String email, String password, Role role) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.type = type;
+        this.role = role;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Convert user type to authority
-        return List.of(new SimpleGrantedAuthority("TYPE_" + type.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

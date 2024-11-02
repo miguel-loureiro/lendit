@@ -1,6 +1,6 @@
 package com.ims.models.dtos;
 
-import com.ims.models.Type;
+import com.ims.models.Role;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Email;
@@ -27,13 +27,13 @@ public class RegisterUserDto {
     private String password;
     @NotEmpty(message = "Role is required")
     @Enumerated(EnumType.STRING)
-    private Type type;
+    private Role role;
 
-    public RegisterUserDto(String username, String email, String password, Type type) {
+    public RegisterUserDto(String username, String email, String password, Role role) {
 
         this.username = username;
         this.email = email;
         this.password = password;
-        this.type = type;
+        this.role = role;
     }
 }
