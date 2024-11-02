@@ -45,37 +45,4 @@ public class AuthenticationController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
-
-    // Add a test endpoint to verify the setup
-    @GetMapping("/test")
-    public ResponseEntity<?> test() {
-        try {
-            return ResponseEntity.ok(Map.of(
-                    "message", "Auth endpoint is accessible",
-                    "timestamp", LocalDateTime.now()
-            ));
-        } catch (Exception e) {
-            log.error("Test endpoint error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/auth/debug")
-    public ResponseEntity<?> debug(@RequestParam String email) {
-        try {
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            // Don't expose the actual password in production!
-            return ResponseEntity.ok(Map.of(
-                    "username", user.getUsername(),
-                    "email", user.getEmail(),
-                    "role", user.getRole(),
-                    "passwordEncoded", user.getPassword().startsWith("$2a$")
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
 }

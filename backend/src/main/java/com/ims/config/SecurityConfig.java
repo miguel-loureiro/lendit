@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/h2-console/**", "/health").permitAll()  // Allow all /auth/ and /h2-console paths
+                        .requestMatchers("/auth/**", "/h2-console/**", "/health", "/guest/**").permitAll()  // Allow all /auth/ and /h2-console paths
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

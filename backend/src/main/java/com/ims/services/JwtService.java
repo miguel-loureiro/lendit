@@ -57,6 +57,10 @@ public class JwtService {
         return createToken(u.getEmail());
     }
 
+    public long getExpirationTime() {
+        return jwtExpiration;
+    }
+
     private String createToken(String email) {
         return Jwts.builder()
                 .subject(email)
