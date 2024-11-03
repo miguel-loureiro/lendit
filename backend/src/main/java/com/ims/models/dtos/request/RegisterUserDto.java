@@ -1,4 +1,4 @@
-package com.ims.models.dtos;
+package com.ims.models.dtos.request;
 
 import com.ims.models.Role;
 import jakarta.persistence.EnumType;

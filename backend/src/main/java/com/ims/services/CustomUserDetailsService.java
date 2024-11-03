@@ -1,11 +1,9 @@
 package com.ims.services;
 
-import com.ims.models.CustomUserDetails;
-import com.ims.models.Role;
+import com.ims.security.CustomUserDetails;
 import com.ims.models.User;
 import com.ims.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

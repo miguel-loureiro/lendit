@@ -1,24 +1,15 @@
 package com.ims.controllers;
 
-import com.ims.models.CustomUserDetails;
-import com.ims.models.LoginResponse;
-import com.ims.models.User;
-import com.ims.models.dtos.LoginUserDto;
+import com.ims.models.dtos.request.LoginUserDto;
 import com.ims.repository.UserRepository;
 import com.ims.services.AuthenticationService;
-import com.ims.services.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController

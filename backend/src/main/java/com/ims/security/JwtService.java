@@ -1,6 +1,5 @@
-package com.ims.services;
+package com.ims.security;
 
-import com.ims.models.CustomUserDetails;
 import com.ims.models.Role;
 import com.ims.models.User;
 import io.jsonwebtoken.*;

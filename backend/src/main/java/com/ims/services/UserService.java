@@ -1,13 +1,16 @@
 package com.ims.services;
 
-import com.ims.models.CustomUserDetails;
-import com.ims.models.Item;
+import com.ims.exceptions.UnauthorizedException;
+import com.ims.security.AuthenticationFacade;
+import com.ims.security.CustomUserDetails;
 import com.ims.models.Role;
 import com.ims.models.User;
-import com.ims.models.dtos.RegisterUserDto;
-import com.ims.models.dtos.UserDto;
+import com.ims.models.dtos.request.RegisterUserDto;
+import com.ims.models.dtos.response.UserDto;
 import com.ims.repository.UserRepository;
+import com.ims.security.UserSecurity;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,132 +26,94 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
-    @Autowired
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationFacade authenticationFacade;
+    private final UserSecurity userSecurity;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-
+    @Autowired
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       AuthenticationFacade authenticationFacade, UserSecurity userSecurity) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationFacade = authenticationFacade;
+        this.userSecurity = userSecurity;
     }
 
-    public ResponseEntity<Page<UserDto>> getAllUsers(int page, int size) {
-
-        Sort usernameSort = Sort.by("username");
-        Pageable paging = PageRequest.of(page, size, usernameSort.ascending());
-
-        Page<User> usersPage = userRepository.findAll(paging);
-        Page<UserDto> userDtosPage = usersPage.map(UserDto::new);
-
-        return ResponseEntity.ok(userDtosPage);
-    }
-
-    public ResponseEntity<UserDto> createUser(RegisterUserDto input) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || authentication.getPrincipal() == "anonymousUser") {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    @Transactional
+    public User createUser (RegisterUserDto registerUserDto) {
+        // Check if the username or email already exists
+        if (userRepository.findByEmail(registerUserDto.getEmail())) {
+            throw new IllegalArgumentException("Username already exists.");
+        }
+        if (userRepository.existsByEmail(registerUserDto.getEmail())) {
+            throw new IllegalArgumentException("Email already exists.");
         }
 
-        Object principal = authentication.getPrincipal();
+        // Create a new User entity from the DTO
+        User newUser  = new User();
+        newUser .setUsername(registerUserDto.getUsername());
+        newUser .setEmail(registerUserDto.getEmail());
+        newUser .setPassword(passwordEncoder.encode(registerUserDto.getPassword()));
+        newUser .setRole(registerUserDto.getRole());
 
-        CustomUserDetails currentUserDetails = (CustomUserDetails) principal;
-        User currentUser = currentUserDetails.user();
-        Role newUserRole = input.getRole();
+        // Save the new user to the repository
+        return userRepository.save(newUser );
+    }
 
-        User targetUser = new User();
-        targetUser.setUsername(input.getUsername());
-        targetUser.setRole(newUserRole);
 
-        if (!hasPermissionToCreateUser(currentUser, targetUser)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+    @Transactional
+    public User updateUser (Integer id, User updatedUser ) {
+        Authentication authentication = authenticationFacade.getAuthentication();
+
+        // Check if the current user has the MANAGER role
+        boolean isManager = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
+
+        // If not a manager, ensure the user is updating their own profile
+        if (!isManager) {
+            CustomUserDetails currentUser  = (CustomUserDetails) authentication.getPrincipal();
+            if (!userSecurity.isCurrentUser (currentUser.user().getId())) {
+                throw new UnauthorizedException("You are not allowed to update this user.");
+            }
         }
 
-        boolean userExists = userRepository.findByEmail(input.getEmail()).isPresent() ||
-                userRepository.findByUsername(input.getUsername()).isPresent();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User  not found"));
 
-        if (userExists) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .header("Error-Message", "User already in the database")
-                    .body(null);
+        // Update user fields
+        user.setUsername(updatedUser .getUsername());
+        user.setEmail(updatedUser .getEmail());
+        if (updatedUser .getPassword() != null && !updatedUser .getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser .getPassword()));
         }
 
-        User user = new User(input.getUsername(), input.getEmail(),
-                passwordEncoder.encode(input.getPassword()), input.getRole());
-        User savedUser = userRepository.save(user);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(new UserDto(savedUser));
+        return userRepository.save(user);
     }
 
+    @Transactional
+    public void deleteUser (Integer id) {
+        Authentication authentication = authenticationFacade.getAuthentication();
 
-    public Optional<User> getUserByIdentifier(String identifier, String Role) {
+        // Check if the current user has the MANAGER role
+        boolean isManager = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
 
-        switch (Role) {
-
-            case "id":
-                try {
-
-                    return Optional.of(userRepository.getReferenceById(Integer.parseInt(identifier)));
-                } catch (EntityNotFoundException | NumberFormatException e) {
-
-                    return Optional.empty();
-                }
-            case "username":
-
-                return userRepository.findByUsername(identifier);
-            case "email":
-
-                return userRepository.findByEmail(identifier);
-            default:
-                throw new IllegalArgumentException("Invalid identifier Role: " + Role);
+        // If not a manager, ensure the user is deleting their own account
+        if (!isManager) {
+            CustomUserDetails currentUser  = (CustomUserDetails) authentication.getPrincipal();
+            if (!userSecurity.isCurrentUser (currentUser.user().getId())) {
+                throw new UnauthorizedException("You are not allowed to delete this user.");
+            }
         }
-    }
 
-    private boolean hasPermissionToCreateUser(User currentUser, User targetUser) {
-
-        Role currentUserRole = currentUser.getRole();
-        Role targetUserRole = targetUser.getRole();
-        boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
-
-        return switch (currentUserRole) {
-            case SUPER -> !isSameUser;
-            case MANAGER -> isSameUser || targetUserRole == Role.CLIENT;
-            default -> false;
-        };
-    }
-
-    private boolean hasPermissionToDeleteUser(User currentUser, User targetUser) {
-
-        Role currentUserRole = currentUser.getRole();
-        Role targetUserRole = targetUser.getRole();
-        boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
-
-        return switch (currentUserRole) {
-            case SUPER -> !isSameUser;
-            case MANAGER -> isSameUser || targetUserRole == Role.CLIENT;
-            case CLIENT -> isSameUser;
-            default -> false;
-        };
-    }
-
-    private boolean hasPermissionToUpdateUser(User currentUser, User targetUser) {
-
-        Role currentUserRole = currentUser.getRole();
-        Role targetUserRole = targetUser.getRole();
-        boolean isSameUser = currentUser.getUsername().equals(targetUser.getUsername());
-
-        return switch (currentUserRole) {
-            case SUPER -> !isSameUser;
-            case MANAGER-> isSameUser || targetUserRole == Role.CLIENT;
-            case CLIENT-> isSameUser;
-            default -> false;
-        };
+        if (!userRepository.existsById(id)) {
+            throw new IllegalArgumentException("User  not found");
+        }
+        userRepository.deleteById(id);
     }
 }

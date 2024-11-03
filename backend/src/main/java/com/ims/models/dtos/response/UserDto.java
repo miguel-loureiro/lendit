@@ -1,13 +1,13 @@
-package com.ims.models.dtos;
+package com.ims.models.dtos.response;
 
 import com.ims.models.Role;
 import com.ims.models.User;
+import com.ims.models.dtos.ItemDesignationAndCategoryDto;
 import lombok.Getter;
 import lombok.Setter;
-import java.util.HashSet;
+
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Setter
 @Getter

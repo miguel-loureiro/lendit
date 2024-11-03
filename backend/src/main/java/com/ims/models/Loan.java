@@ -1,11 +1,15 @@
 package com.ims.models;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "loans")
+@Getter
+@Setter
 public class Loan {
 
     @Id
@@ -27,10 +31,15 @@ public class Loan {
     private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
-    private LoanStatus status;
+    private LoanStatus status = LoanStatus.ACTIVE;
+
+    @Version
+    private Long version;
+
+    // Add actual return date
+    private LocalDateTime returnDate;
 
     // Constructors, getters, and setters
-
     public Loan() {}
 
     public Loan(User user, Item item, LocalDateTime startDate, LocalDateTime endDate, LoanStatus status) {
@@ -41,5 +50,14 @@ public class Loan {
         this.status = status;
     }
 
-    // Getters and setters...
+    @PrePersist
+    @PreUpdate
+    private void validateDates() {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+        if (returnDate != null && returnDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("Return date cannot be before start date");
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package com.ims.models.dtos;
+package com.ims.models.dtos.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;

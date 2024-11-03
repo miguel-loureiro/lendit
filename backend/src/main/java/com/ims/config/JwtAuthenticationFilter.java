@@ -1,7 +1,7 @@
 package com.ims.config;
 
 import com.ims.services.CustomUserDetailsService;
-import com.ims.services.JwtService;
+import com.ims.security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

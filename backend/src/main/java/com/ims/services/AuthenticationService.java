@@ -1,8 +1,9 @@
 package com.ims.services;
 
 import com.ims.models.User;
-import com.ims.models.dtos.LoginUserDto;
+import com.ims.models.dtos.request.LoginUserDto;
 import com.ims.repository.UserRepository;
+import com.ims.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;

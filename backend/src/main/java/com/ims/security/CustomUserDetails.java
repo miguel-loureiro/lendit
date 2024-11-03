@@ -1,7 +1,6 @@
-package com.ims.models;
+package com.ims.security;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.ims.models.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

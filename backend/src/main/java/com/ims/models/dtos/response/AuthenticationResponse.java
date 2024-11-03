@@ -1,5 +1,6 @@
-package com.ims.models;
+package com.ims.models.dtos.response;
 
+import com.ims.models.User;
 import lombok.Getter;
 import lombok.Setter;
 
