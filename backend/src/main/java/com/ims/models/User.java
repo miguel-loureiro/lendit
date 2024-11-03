@@ -36,24 +36,13 @@ public class User implements UserDetails {
     @Version
     private Long version;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name="user_items", joinColumns = @JoinColumn(name= "user_id"), inverseJoinColumns = @JoinColumn(name= "item_id"))
-    private Set<Item> items = new HashSet<>();
-
-    public Set<Item> getItems() {
-
-        if(items == null) {
-
-            items = new HashSet<>();
-        }
-        return items;
-    }
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Set<Loan> loans = new HashSet<>();
 
     // No-argument constructor
-    public User() {
-    }
+    public User() {}
 
-    // Constructor with all fields except id and books
+    // Constructor with all fields except id
     public User(String username, String email, String password, Role role) {
         this.username = username;
         this.email = email;
@@ -65,7 +54,7 @@ public class User implements UserDetails {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
+        User user = (User ) o;
         return Objects.equals(username, user.username) &&
                 Objects.equals(email, user.email);
     }
@@ -77,37 +66,25 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Convert user type to authority
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
+    // UserDetails methods
     @Override
-    public String getUsername() {
-        return username;
-    }
+    public String getUsername() { return username; }
 
     @Override
-    public String getPassword() {
-        return password;
-    }
+    public String getPassword() { return password; }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true; // or implement your own logic
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true; // or implement your own logic
-    }
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true; // or implement your own logic
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return true; // or implement your own logic
-    }
+    public boolean isEnabled() { return true; }
 }

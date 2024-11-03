@@ -1,5 +1,6 @@
 package com.ims;
 
+import com.ims.models.Category;
 import com.ims.models.Item;
 import com.ims.models.Role;
 import com.ims.models.User;
@@ -98,7 +99,7 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
     private Item createRandomItem(String designation, Random random) {
         String barcode = generateRandomBarcode();
         String brand = getRandomElement(BRANDS, random);
-        Item.Category category = getRandomElement(Item.Category.values(), random);
+        Category category = getRandomElement(Category.values(), random);
         BigDecimal purchasePrice = generateRandomPrice(random);
         int stockQuantity = random.nextInt(100); // Random stock quantity between 0 and 99
 

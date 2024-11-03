@@ -1,12 +1,10 @@
 package com.ims.models;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -35,47 +33,34 @@ public class Item {
     private Category category;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal purchasePrice = BigDecimal.ZERO; // Default to zero
+    private BigDecimal purchasePrice = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private Integer stockQuantity = 0; // Default to zero
+    private Integer stockQuantity = 0;
+
+    @Enumerated(EnumType.STRING)
+    private ItemState state = ItemState.FREE;
 
     @Version
     @Column
     private Long version;
 
-    @ManyToMany(mappedBy = "items")
-    private Set<User> users = new HashSet<>();
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Set<Loan> loans = new HashSet<>();
 
     // Default constructor
-    public Item() {}
+    public Item() {
+    }
 
-    // Full constructor with default values for version and users
-    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity, Long version, Set<User> users) {
+    // Full constructor
+    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity) {
         this.designation = designation;
         this.barcode = barcode;
         this.brand = brand;
         this.category = category;
-        this.purchasePrice = (purchasePrice != null) ? purchasePrice : BigDecimal.ZERO;
-        this.stockQuantity = (stockQuantity != null) ? stockQuantity : 0;
-        this.version = version;
-        this.users = (users != null) ? users : new HashSet<>();
+        this.purchasePrice = purchasePrice;
+        this.stockQuantity = stockQuantity;
     }
-
-    // Constructor with essential fields only, setting default values for others
-    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity) {
-        this(designation, barcode, brand, category, purchasePrice, stockQuantity, null, null);
-    }
-
-    // Constructor with minimum fields only, setting default values for others
-    public Item(String designation, Category category) {
-        this.designation = designation;
-        this.barcode = "0000000000000";
-        this.brand = "";
-        this.category = category;
-        this.stockQuantity = 0;
-    }
-
 
     @PrePersist
     @PreUpdate
@@ -93,33 +78,11 @@ public class Item {
         if (this == o) return true;
         if (!(o instanceof Item)) return false;
         Item item = (Item) o;
-        return barcode.equals(item.barcode);
+        return Objects.equals(barcode, item.barcode);
     }
 
     @Override
     public int hashCode() {
-        return barcode.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "Item{" +
-                "designation='" + designation + '\'' +
-                ", barcode='" + barcode + '\'' +
-                ", brand='" + brand + '\'' +
-                ", category=" + category +
-                ", purchasePrice=" + purchasePrice +
-                ", stockQuantity=" + stockQuantity +
-                '}';
-    }
-
-    public enum Category {
-        LAPTOP,
-        DESKTOP,
-        MONITOR,
-        PERIPHERAL,
-        NETWORK_EQUIPMENT,
-        SERVER,
-        STORAGE_DEVICE
+        return Objects.hash(barcode);
     }
 }

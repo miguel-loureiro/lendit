@@ -27,11 +27,7 @@ public class UserDto {
         this.email = user.getEmail();
         this.role = user.getRole();
         this.profileImage = user.getProfileImage();
-        this.items = user.getItems() != null
-                ? user.getItems().stream()
-                .map(item -> new ItemDesignationAndCategoryDto(item.getDesignation(), item.getCategory()))
-                .collect(Collectors.toSet())
-                : new HashSet<>();
+
     }
 
     public UserDto(String username, String email, Role role) {

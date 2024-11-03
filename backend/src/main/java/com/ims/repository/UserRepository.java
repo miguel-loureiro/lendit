@@ -13,14 +13,14 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     Optional<User> findByEmail(String email);
     Optional<User> findByUsername(String username);
-    Page<User> findAll(Pageable page);
+    Page<User> findAll(Pageable pageable);
 
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.items WHERE u.id = :id")
-    Optional<User> findByIdWithItems(@Param("id") Integer id);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.loans WHERE u.id = :id")
+    Optional<User> findByIdWithLoans(@Param("id") Integer id);
 
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.items WHERE u.username = :username")
-    Optional<User> findByUsernameWithItems(@Param("username") String username);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.loans WHERE u.username = :username")
+    Optional<User> findByUsernameWithLoans(@Param("username") String username);
 
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.items WHERE u.email = :email")
-    Optional<User> findByEmailWithItems(@Param("email") String email);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.loans WHERE u.email = :email")
+    Optional<User> findByEmailWithLoans(@Param("email") String email);
 }

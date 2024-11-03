@@ -1,5 +1,6 @@
 package com.ims.models.dtos;
 
+import com.ims.models.Category;
 import com.ims.models.Item;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,9 +16,9 @@ public class ItemDesignationAndCategoryDto {
     private String designation;
     @Getter
     @Setter
-    private Item.Category category;
+    private Category category;
 
-    public ItemDesignationAndCategoryDto(String designation, Item.Category category) {
+    public ItemDesignationAndCategoryDto(String designation, Category category) {
         this.designation = designation;
         this.category = category;
     }

@@ -87,104 +87,6 @@ public class UserService {
         return ResponseEntity.status(HttpStatus.CREATED).body(new UserDto(savedUser));
     }
 
-    public ResponseEntity<Void> deleteUser(String identifier, String Role) throws IOException {
-
-        Optional<User> currentUserOpt = getCurrentUser();
-
-        if (currentUserOpt.isEmpty()) {
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        User currentUser = currentUserOpt.get();
-
-        Optional<User> userToDeleteOpt = getUserByIdentifier(identifier, Role);
-
-        if (userToDeleteOpt.isEmpty()) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        User userToDelete = userToDeleteOpt.get();
-
-        if (!hasPermissionToDeleteUser(currentUser, userToDelete)) {
-
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        userRepository.delete(userToDelete);
-
-        return ResponseEntity.ok().build();
-    }
-
-    public ResponseEntity<UserDto> updateUser(String identifier, String Role, UserDto input) throws IOException {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || authentication.getPrincipal() == "anonymousUser") {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-        }
-
-        Optional<User> currentUserOpt = getCurrentUser();
-        if (currentUserOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User currentUser = currentUserOpt.get();
-
-        Optional<User> userToUpdateOpt = getUserByIdentifier(identifier, Role);
-        if (userToUpdateOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        User userToUpdate = userToUpdateOpt.get();
-
-        if (!hasPermissionToUpdateUser(currentUser, userToUpdate)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        userToUpdate.setUsername(input.getUsername());
-        userToUpdate.setEmail(input.getEmail());
-        userToUpdate.setRole(input.getRole());
-        userToUpdate.setProfileImage(input.getProfileImage());
-
-        if (input.getItems() != null) {
-            userToUpdate.setItems(
-                    input.getItems().stream()
-                            .map(itemDto -> new Item(itemDto.getDesignation(), itemDto.getCategory()))
-                            .collect(Collectors.toSet())
-            );
-        }
-
-        User updatedUser = userRepository.save(userToUpdate);
-        UserDto updatedUserDto = new UserDto(updatedUser);
-
-        return ResponseEntity.ok(updatedUserDto);
-    }
-
-    public ResponseEntity<Void> changeUserPassword(String username, String newPassword) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || authentication.getPrincipal() == "anonymousUser") {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-        }
-
-        Optional<User> currentUserOpt = getCurrentUser();
-
-        if (currentUserOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        User currentUser = currentUserOpt.get();
-
-        if (!currentUser.getUsername().equals(username)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        currentUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(currentUser);
-
-        return ResponseEntity.ok().build();
-    }
 
     public Optional<User> getUserByIdentifier(String identifier, String Role) {
 
@@ -207,20 +109,6 @@ public class UserService {
             default:
                 throw new IllegalArgumentException("Invalid identifier Role: " + Role);
         }
-    }
-
-    public Optional<User> getCurrentUser() {
-
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if (principal instanceof UserDetails) {
-
-            CustomUserDetails userDetails = (CustomUserDetails) principal;
-
-            return userRepository.findByIdWithItems(userDetails.user().getId());
-        }
-
-        return Optional.empty();
     }
 
     private boolean hasPermissionToCreateUser(User currentUser, User targetUser) {
