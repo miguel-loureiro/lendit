@@ -18,4 +18,3 @@ public class UpdateUserDto {
         this.password = password;
     }
 }
-}
