@@ -1,5 +1,6 @@
 package com.ims.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +26,7 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
+    @JsonIgnore // Prevent serialization of the password
     @Column(nullable = false, length = 60)
     private String password;
 
@@ -37,7 +39,7 @@ public class User implements UserDetails {
     private Long version;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private Set<Loan> loans = new HashSet<>();
+    private Set<Loan> loans = new HashSet<>(); // Add this field to track loans
 
     // No-argument constructor
     public User() {}
@@ -48,6 +50,15 @@ public class User implements UserDetails {
         this.email = email;
         this.password = password;
         this.role = role;
+    }
+
+    // Constructor with loans
+    public User(String username, String email, String password, Role role, Set<Loan> loans) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.loans = loans;
     }
 
     @Override
@@ -87,4 +98,15 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() { return true; }
+
+    @Override
+    public String toString() {
+        return "User {" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", role=" + role +
+                ", profileImage='" + profileImage + '\'' +
+                '}';
+    }
 }

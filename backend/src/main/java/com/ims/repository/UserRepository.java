@@ -12,7 +12,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Integer> {
 
     Optional<User> findByEmail(String email);
-    Optional<User> findByUsername(String username);
     Page<User> findAll(Pageable pageable);
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.loans WHERE u.id = :id")

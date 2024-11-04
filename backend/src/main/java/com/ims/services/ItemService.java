@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
+
 import java.io.IOException;
 
 @Service
@@ -31,7 +32,7 @@ public class ItemService {
         Pageable paging = PageRequest.of(page, size, Sort.by("designation").ascending());
         Page<Item> itemsPage = itemRepository.findAll(paging);
 
-        Page<ItemDesignationAndCategoryDto> itemDtos = itemsPage.map(item -> new ItemDesignationAndCategoryDto(item));
+        Page<ItemDesignationAndCategoryDto> itemDtos = itemsPage.map(ItemDesignationAndCategoryDto::new);
 
         return ResponseEntity.ok(itemDtos);
     }

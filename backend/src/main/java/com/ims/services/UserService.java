@@ -1,6 +1,7 @@
 package com.ims.services;
 
 import com.ims.exceptions.UnauthorizedException;
+import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.security.AuthenticationFacade;
 import com.ims.security.CustomUserDetails;
 import com.ims.models.Role;
@@ -46,11 +47,9 @@ public class UserService {
 
     @Transactional
     public User createUser (RegisterUserDto registerUserDto) {
-        // Check if the username or email already exists
-        if (userRepository.findByEmail(registerUserDto.getEmail())) {
-            throw new IllegalArgumentException("Username already exists.");
-        }
-        if (userRepository.existsByEmail(registerUserDto.getEmail())) {
+        // Check if the email already exists
+        Optional<User> existingUser  = userRepository.findByEmail(registerUserDto.getEmail());
+        if (existingUser .isPresent()) {
             throw new IllegalArgumentException("Email already exists.");
         }
 
@@ -67,7 +66,7 @@ public class UserService {
 
 
     @Transactional
-    public User updateUser (Integer id, User updatedUser ) {
+    public User updateUser (Integer id, UpdateUserDto updatedUser) {
         Authentication authentication = authenticationFacade.getAuthentication();
 
         // Check if the current user has the MANAGER role
@@ -86,10 +85,10 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User  not found"));
 
         // Update user fields
-        user.setUsername(updatedUser .getUsername());
-        user.setEmail(updatedUser .getEmail());
-        if (updatedUser .getPassword() != null && !updatedUser .getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(updatedUser .getPassword()));
+        user.setUsername(updatedUser.getUsername());
+        user.setEmail(updatedUser.getEmail());
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
         return userRepository.save(user);

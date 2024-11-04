@@ -5,9 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "items")
@@ -38,51 +37,61 @@ public class Item {
     @Column(nullable = false)
     private Integer stockQuantity = 0;
 
-    @Enumerated(EnumType.STRING)
-    private ItemState state = ItemState.FREE;
-
     @Version
     @Column
     private Long version;
 
-    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private Set<Loan> loans = new HashSet<>();
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+    @OrderBy("requestDate DESC")
+    private Set<ItemRequest> requests = new LinkedHashSet<>();
 
-    // Default constructor
-    public Item() {
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Set<Loan> loans = new HashSet<>(); // Add this field to track loans
+
+    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, int stockQuantity) {
     }
 
-    // Full constructor
-    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity) {
+    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity, Long version) {
         this.designation = designation;
         this.barcode = barcode;
         this.brand = brand;
         this.category = category;
         this.purchasePrice = purchasePrice;
         this.stockQuantity = stockQuantity;
+        this.version = version;
     }
 
-    @PrePersist
-    @PreUpdate
-    private void validateFields() {
-        if (stockQuantity < 0) {
-            throw new IllegalArgumentException("Stock quantity cannot be negative");
-        }
-        if (purchasePrice.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Purchase price cannot be negative");
-        }
+    public Item() {
+    }
+    
+    public boolean isAvailable() {
+        return getAvailableQuantity() > 0; // Check only stock quantity
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Item)) return false;
-        Item item = (Item) o;
-        return Objects.equals(barcode, item.barcode);
+    public boolean isAvailableForDirectLoan() {
+        return getAvailableQuantity() > 0 && getPendingRequests().isEmpty(); // Check stock and pending requests
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(barcode);
+    public int getAvailableQuantity() {
+        return stockQuantity - getActiveLoans().size();
+    }
+
+    public List<Loan> getActiveLoans() {
+        return loans.stream()
+                .filter(loan -> loan.getStatus() == LoanStatus.ACTIVE ||
+                        loan.getStatus() == LoanStatus.OVERDUE)
+                .collect(Collectors.toList());
+    }
+
+    public List<ItemRequest> getPendingRequests() {
+        return requests.stream()
+                .filter(request -> request.getStatus() == ItemRequestStatus.PENDING)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<ItemRequest> getNextPendingRequest() {
+        return requests.stream()
+                .filter(request -> request.getStatus() == ItemRequestStatus.PENDING)
+                .findFirst();
     }
 }

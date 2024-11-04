@@ -50,6 +50,14 @@ public class Loan {
         this.status = status;
     }
 
+    public Loan(User user, Item item, LocalDateTime startDate, LocalDateTime endDate) {
+        this.user = user;
+        this.item = item;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+
     @PrePersist
     @PreUpdate
     private void validateDates() {
