@@ -29,6 +29,8 @@ public class RegisterUserDto {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String profileImage;
+
     public RegisterUserDto(String username, String email, String password, Role role) {
 
         this.username = username;

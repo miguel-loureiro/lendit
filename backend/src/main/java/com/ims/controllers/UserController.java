@@ -6,6 +6,7 @@ import com.ims.models.Role;
 import com.ims.models.User;
 import com.ims.models.dtos.request.RegisterUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
+import com.ims.models.dtos.response.UserResponseDto;
 import com.ims.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,12 @@ public class UserController {
     }
 
     // Create a new user
-    @PostMapping
-    public ResponseEntity<User> createUser (@RequestBody @Valid RegisterUserDto registerUserDto) {
+    @PostMapping("/new")
+    public ResponseEntity<UserResponseDto> createUser (@RequestBody @Valid RegisterUserDto registerUserDto) {
         if(registerUserDto.getRole() == Role.SUPER) {
             throw new InvalidUserRoleException("Cannot create SUPER user");
         }
-        User createdUser  = userService.createUser(registerUserDto);
+        UserResponseDto createdUser  = userService.createUser(registerUserDto);
         return new ResponseEntity<>(createdUser , HttpStatus.CREATED);
     }
 

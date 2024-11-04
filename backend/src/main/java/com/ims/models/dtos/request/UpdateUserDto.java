@@ -1,26 +1,22 @@
 package com.ims.models.dtos.request;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
+@Builder
 public class UpdateUserDto {
+    @NotNull(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
 
-    @Email(message = "The email address is invalid.", flags = {Pattern.Flag.CASE_INSENSITIVE })
+    @NotNull(message = "Email is required")
+    @Email(message = "Invalid email format")
     private String email;
 
-    @Pattern(regexp = "(?=.*[a-z])(?=.*[d])(?=.*[@#$%])(?=.*[A-Z]).{6,16}", flags = {Pattern.Flag.CASE_INSENSITIVE}, message = "The given password does not match the rules")
     private String password;
-
-    public UpdateUserDto(String username, String email, String password) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
-    }
+    private String profileImage;
 }
