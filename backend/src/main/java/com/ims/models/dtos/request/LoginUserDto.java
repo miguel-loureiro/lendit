@@ -31,5 +31,8 @@ public class LoginUserDto {
         this.email = email;
         this.password = password;
     }
+
+    public LoginUserDto(String mail, String s) {
+    }
 }
 

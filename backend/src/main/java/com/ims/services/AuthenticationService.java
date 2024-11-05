@@ -20,6 +20,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 @RequiredArgsConstructor
 @Slf4j
 public class AuthenticationService {
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
