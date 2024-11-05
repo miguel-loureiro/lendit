@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthenticationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">AuthenticationService.java</span></div><h1>AuthenticationService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.models.User;
+import com.ims.models.dtos.request.LoginUserDto;
+import com.ims.models.dtos.response.LoginResponse;
+import com.ims.repository.UserRepository;
+import com.ims.security.JwtService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.AuthenticationServiceException;
+
+@Service
+@RequiredArgsConstructor
+<span class="fc" id="L21">@Slf4j</span>
+public class AuthenticationService {
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public LoginResponse login(LoginUserDto loginRequest) {
+<span class="fc" id="L30">        log.info(&quot;Starting authentication process for email: {}&quot;, loginRequest.getEmail());</span>
+        try {
+            // First verify the user exists
+<span class="fc" id="L33">            User user = userRepository.findByEmail(loginRequest.getEmail())</span>
+<span class="fc" id="L34">                    .orElseThrow(() -&gt; new BadCredentialsException(&quot;Invalid credentials&quot;));</span>
+
+<span class="fc" id="L36">            log.info(&quot;User found in database: {}&quot;, user.getUsername());</span>
+
+            // Verify password manually first
+<span class="fc bfc" id="L39" title="All 2 branches covered.">            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {</span>
+<span class="fc" id="L40">                log.error(&quot;Password doesn't match for user: {}&quot;, user.getEmail());</span>
+<span class="fc" id="L41">                throw new BadCredentialsException(&quot;Invalid credentials&quot;);</span>
+            }
+
+            // Perform the authentication
+<span class="fc" id="L45">            Authentication authentication = authenticationManager.authenticate(</span>
+                    new UsernamePasswordAuthenticationToken(
+<span class="fc" id="L47">                            loginRequest.getEmail(),</span>
+<span class="fc" id="L48">                            loginRequest.getPassword()</span>
+                    )
+            );
+
+<span class="fc" id="L52">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+
+<span class="fc" id="L54">            String jwt = jwtService.generateToken(user);</span>
+
+<span class="fc" id="L56">            log.info(&quot;Authentication successful for user: {}&quot;, user.getEmail());</span>
+
+<span class="fc" id="L58">            return LoginResponse.builder()</span>
+<span class="fc" id="L59">                    .token(jwt)</span>
+<span class="fc" id="L60">                    .id(user.getId())</span>
+<span class="fc" id="L61">                    .email(user.getEmail())</span>
+<span class="fc" id="L62">                    .username(user.getUsername())</span>
+<span class="fc" id="L63">                    .role(user.getRole())</span>
+<span class="fc" id="L64">                    .build();</span>
+
+<span class="fc" id="L66">        } catch (BadCredentialsException e) {</span>
+<span class="fc" id="L67">            log.error(&quot;Authentication failed for user: {}&quot;, loginRequest.getEmail());</span>
+<span class="fc" id="L68">            throw new BadCredentialsException(&quot;Invalid credentials&quot;);</span>
+<span class="fc" id="L69">        } catch (Exception e) {</span>
+<span class="fc" id="L70">            log.error(&quot;Unexpected error during authentication&quot;, e);</span>
+<span class="fc" id="L71">            throw new AuthenticationServiceException(&quot;Authentication failed&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

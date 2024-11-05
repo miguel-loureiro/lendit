@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoanService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">LoanService.java</span></div><h1>LoanService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.models.*;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.ItemRequestRepository;
+import com.ims.repository.LoanRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class LoanService {
+    private final LoanRepository loanRepository;
+    private final ItemRequestRepository requestRepository;
+
+    public Loan createLoan(User user, Item item, LocalDateTime startDate, LocalDateTime endDate) {
+        // Check if item is available
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (!item.isAvailable()) {</span>
+<span class="nc" id="L24">            throw new IllegalStateException(&quot;Item is not available for loan&quot;);</span>
+        }
+
+        // Check if user has been notified about availability
+<span class="nc" id="L28">        Optional&lt;ItemRequest&gt; userRequest = requestRepository</span>
+<span class="nc" id="L29">                .findByUserAndItemAndStatus(user, item, ItemRequestStatus.NOTIFIED);</span>
+
+        // If there are pending requests and user is not next in line
+<span class="nc bnc" id="L32" title="All 4 branches missed.">        if (!item.getPendingRequests().isEmpty() &amp;&amp; userRequest.isEmpty()) {</span>
+<span class="nc" id="L33">            throw new IllegalStateException(&quot;There are users waiting in line for this item&quot;);</span>
+        }
+
+        // Create the loan
+<span class="nc" id="L37">        Loan loan = new Loan(user, item, startDate, endDate);</span>
+<span class="nc" id="L38">        loan = loanRepository.save(loan);</span>
+
+        // Update request status if it existed
+<span class="nc" id="L41">        userRequest.ifPresent(request -&gt; {</span>
+<span class="nc" id="L42">            request.setStatus(ItemRequestStatus.FULFILLED);</span>
+<span class="nc" id="L43">            requestRepository.save(request);</span>
+<span class="nc" id="L44">        });</span>
+
+<span class="nc" id="L46">        return loan;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
