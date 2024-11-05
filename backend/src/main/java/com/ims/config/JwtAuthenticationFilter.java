@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,7 +19,6 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
 
@@ -27,7 +27,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-
         // Skip JWT check for permitted URLs
         if (shouldNotFilter(request)) {
             filterChain.doFilter(request, response);
@@ -46,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         userEmail = jwtService.extractEmail(jwt);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (userEmail != null && (SecurityContextHolder.getContext().getAuthentication() == null || !isExpectedAuthentication(SecurityContextHolder.getContext().getAuthentication()))) {
             UserDetails userDetails = this.customUserDetailsService.loadUserByUsername(userEmail);
             if (jwtService.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -58,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
         filterChain.doFilter(request, response);
     }
 
@@ -67,5 +67,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/guest/") ||
                 path.startsWith("/h2-console/") ||
                 path.equals("/health");
+    }
+
+    private boolean isExpectedAuthentication(Authentication authentication) {
+        if (authentication instanceof UsernamePasswordAuthenticationToken) {
+            UsernamePasswordAuthenticationToken authToken = (UsernamePasswordAuthenticationToken) authentication;
+            return authToken.getPrincipal() instanceof UserDetails
+                    && authToken.getAuthorities().containsAll(((UserDetails) authToken.getPrincipal()).getAuthorities());
+        }
+        return false;
     }
 }
