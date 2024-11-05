@@ -102,9 +102,8 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
         Category category = getRandomElement(Category.values(), random);
         BigDecimal purchasePrice = generateRandomPrice(random);
         int stockQuantity = random.nextInt(100); // Random stock quantity between 0 and 99
-        long version = 0;
 
-        return new Item(designation, barcode, brand, category, purchasePrice, stockQuantity, version);
+        return new Item(designation, barcode, brand, category, purchasePrice, stockQuantity);
     }
 
     private String generateRandomBarcode() {

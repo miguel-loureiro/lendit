@@ -3,8 +3,7 @@ package com.ims.controllers;
 import com.ims.exceptions.ForbiddenException;
 import com.ims.exceptions.InvalidUserRoleException;
 import com.ims.models.Role;
-import com.ims.models.User;
-import com.ims.models.dtos.request.RegisterUserDto;
+import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.models.dtos.response.UserResponseDto;
 import com.ims.models.dtos.response.UserUpdateResponseDto;
@@ -28,11 +27,11 @@ public class UserController {
 
     // Create a new user
     @PostMapping("/new")
-    public ResponseEntity<UserResponseDto> createUser (@RequestBody @Valid RegisterUserDto registerUserDto) {
-        if(registerUserDto.getRole() == Role.SUPER) {
+    public ResponseEntity<UserResponseDto> createUser (@RequestBody @Valid CreateUserDto createUserDto) {
+        if(createUserDto.getRole() == Role.SUPER) {
             throw new InvalidUserRoleException("Cannot create SUPER user");
         }
-        UserResponseDto createdUser  = userService.createUser(registerUserDto);
+        UserResponseDto createdUser  = userService.createUser(createUserDto);
         return new ResponseEntity<>(createdUser , HttpStatus.CREATED);
     }
 

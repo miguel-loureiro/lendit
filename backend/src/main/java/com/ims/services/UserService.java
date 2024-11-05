@@ -5,7 +5,7 @@ import com.ims.models.dtos.response.UserResponseDto;
 import com.ims.models.dtos.response.UserUpdateResponseDto;
 import com.ims.security.AuthenticationFacade;
 import com.ims.models.User;
-import com.ims.models.dtos.request.RegisterUserDto;
+import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.repository.UserRepository;
 import com.ims.security.UserSecurity;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,21 +28,21 @@ public class UserService {
     private final UserSecurity userSecurity;
 
     @Transactional
-    public UserResponseDto createUser(RegisterUserDto registerUserDto) {
-        log.info("Starting user registration process for email: {}", registerUserDto.getEmail());
-        validateNewUser(registerUserDto);
+    public UserResponseDto createUser(CreateUserDto createUserDto) {
+        log.info("Starting user registration process for email: {}", createUserDto.getEmail());
+        validateNewUser(createUserDto);
 
         try {
             // Create a new User entity from RegisterUserDto
             User newUser = new User(
-                    registerUserDto.getUsername(),
-                    registerUserDto.getEmail().toLowerCase(),
-                    passwordEncoder.encode(registerUserDto.getPassword()),
-                    registerUserDto.getRole()
+                    createUserDto.getUsername(),
+                    createUserDto.getEmail().toLowerCase(),
+                    passwordEncoder.encode(createUserDto.getPassword()),
+                    createUserDto.getRole()
             );
 
-            if (registerUserDto.getProfileImage() != null) {
-                newUser.setProfileImage(registerUserDto.getProfileImage());
+            if (createUserDto.getProfileImage() != null) {
+                newUser.setProfileImage(createUserDto.getProfileImage());
             }
 
             // Save the User entity
@@ -50,7 +50,7 @@ public class UserService {
             log.info("Successfully created new user with ID: {}", savedUser.getId());
 
             // Convert and return UserResponseDto
-            return mapUserToResponseDto(registerUserDto, savedUser);
+            return mapUserToResponseDto(createUserDto, savedUser);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Database constraint violation while creating user", e);
@@ -112,12 +112,12 @@ public class UserService {
         }
     }
 
-    private static UserResponseDto mapUserToResponseDto(RegisterUserDto registerUserDto, User savedUser) {
+    private static UserResponseDto mapUserToResponseDto(CreateUserDto createUserDto, User savedUser) {
         return UserResponseDto.builder()
                 .id(savedUser.getId())
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
-                .password(registerUserDto.getPassword())
+                .password(createUserDto.getPassword())
                 .role(savedUser.getRole())
                 .build();
     }
@@ -131,14 +131,14 @@ public class UserService {
                 .role(savedUser.getRole())
                 .build();
     }
-    private void validateNewUser(RegisterUserDto registerUserDto) {
-        userRepository.findByEmail(registerUserDto.getEmail()).ifPresent(user -> {
-            log.warn("Attempt to register with existing email: {}", registerUserDto.getEmail());
+    private void validateNewUser(CreateUserDto createUserDto) {
+        userRepository.findByEmail(createUserDto.getEmail()).ifPresent(user -> {
+            log.warn("Attempt to register with existing email: {}", createUserDto.getEmail());
             throw new IllegalArgumentException("Email already exists");
         });
 
-        userRepository.findByUsername(registerUserDto.getUsername()).ifPresent(user -> {
-            log.warn("Attempt to register with existing username: {}", registerUserDto.getUsername());
+        userRepository.findByUsername(createUserDto.getUsername()).ifPresent(user -> {
+            log.warn("Attempt to register with existing username: {}", createUserDto.getUsername());
             throw new IllegalArgumentException("Username already exists");
         });
     }

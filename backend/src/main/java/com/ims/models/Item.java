@@ -1,6 +1,9 @@
 package com.ims.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,7 +25,7 @@ public class Item {
     private String designation;
 
     @Column(nullable = false, unique = true, length = 13)
-    private String barcode;
+    private String barcode ="";
 
     @Column(nullable = false)
     private String brand;
@@ -48,22 +51,20 @@ public class Item {
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<Loan> loans = new HashSet<>(); // Add this field to track loans
 
+    // Constructor without version
     public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, int stockQuantity) {
-    }
-
-    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, Integer stockQuantity, Long version) {
         this.designation = designation;
-        this.barcode = barcode;
+        this.barcode = barcode; // Ensure this is not null before calling this constructor
         this.brand = brand;
         this.category = category;
         this.purchasePrice = purchasePrice;
         this.stockQuantity = stockQuantity;
-        this.version = version;
     }
 
-    public Item() {
+    // Default constructor (required by JPA)
+    protected Item() {
     }
-    
+
     public boolean isAvailable() {
         return getAvailableQuantity() > 0; // Check only stock quantity
     }

@@ -27,9 +27,7 @@ CREATE TABLE items (
     category VARCHAR(50) NOT NULL,
     purchase_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     stock_quantity INT NOT NULL DEFAULT 0,
-    item_request VARCHAR(50),
-    version BIGINT NOT NULL,
-    CONSTRAINT version_constraint_items CHECK (version >= 0)  -- Unique constraint name
+    version BIGINT NOT NULL DEFAULT 0
 );
 
 -- Create the loans table

@@ -2,35 +2,20 @@ package com.ims.services;
 
 import com.ims.models.Role;
 import com.ims.models.User;
-import com.ims.models.dtos.request.RegisterUserDto;
+import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.models.dtos.response.UserResponseDto;
-import com.ims.models.dtos.response.UserUpdateResponseDto;
 import com.ims.repository.UserRepository;
-import com.ims.security.AuthenticationFacade;
-import com.ims.security.CustomUserDetails;
-import com.ims.security.UserSecurity;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Collections;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,11 +30,11 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
-    
+
     @InjectMocks
     private UserService userService;
 
-    private RegisterUserDto validRegisterUserDto;
+    private CreateUserDto validCreateUserDto;
     private User savedUser;
     private static final String ENCODED_PASSWORD = "encodedPassword123";
     private UpdateUserDto updatedUserDto;
@@ -60,7 +45,7 @@ class UserServiceTest {
         User existingUser = new User("currentUsername", "current@example.com", "encodedPassword", Role.CLIENT);
         existingUser.setId(2);
 
-        validRegisterUserDto = new RegisterUserDto(
+        validCreateUserDto = new CreateUserDto(
                 "testUser",
                 "test@example.com",
                 "Password123@",
@@ -68,10 +53,10 @@ class UserServiceTest {
         );
 
         savedUser = new User(
-                validRegisterUserDto.getUsername(),
-                validRegisterUserDto.getEmail().toLowerCase(),
+                validCreateUserDto.getUsername(),
+                validCreateUserDto.getEmail().toLowerCase(),
                 ENCODED_PASSWORD,
-                validRegisterUserDto.getRole()
+                validCreateUserDto.getRole()
         );
         // Set an ID to simulate saved user
         savedUser.setId(1);
@@ -96,28 +81,28 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validRegisterUserDto);
+        UserResponseDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         assertNotNull(result);
         assertEquals(savedUser.getId(), result.getId());
-        assertEquals(validRegisterUserDto.getUsername(), result.getUsername());
-        assertEquals(validRegisterUserDto.getEmail().toLowerCase(), result.getEmail());
-        assertEquals(validRegisterUserDto.getRole(), result.getRole());
+        assertEquals(validCreateUserDto.getUsername(), result.getUsername());
+        assertEquals(validCreateUserDto.getEmail().toLowerCase(), result.getEmail());
+        assertEquals(validCreateUserDto.getRole(), result.getRole());
 
-        verify(passwordEncoder).encode(validRegisterUserDto.getPassword());
+        verify(passwordEncoder).encode(validCreateUserDto.getPassword());
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void createUser_WithProfileImage_ShouldSetProfileImage() {
         // Arrange
-        validRegisterUserDto.setProfileImage("profile.jpg");
+        validCreateUserDto.setProfileImage("profile.jpg");
         when(passwordEncoder.encode(any())).thenReturn(ENCODED_PASSWORD);
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validRegisterUserDto);
+        UserResponseDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         verify(userRepository).save(argThat(user ->
@@ -135,7 +120,7 @@ class UserServiceTest {
         // Act & Assert
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> userService.createUser(validRegisterUserDto)
+                () -> userService.createUser(validCreateUserDto)
         );
 
         assertTrue(exception.getMessage().contains("Could not create user"));
@@ -152,7 +137,7 @@ class UserServiceTest {
         // Act & Assert
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> userService.createUser(validRegisterUserDto)
+                () -> userService.createUser(validCreateUserDto)
         );
 
         assertEquals("Failed to create user", exception.getMessage());
@@ -161,12 +146,12 @@ class UserServiceTest {
     @Test
     void createUser_ShouldLowercaseEmail() {
         // Arrange
-        validRegisterUserDto.setEmail("TEST@EXAMPLE.COM");
+        validCreateUserDto.setEmail("TEST@EXAMPLE.COM");
         when(passwordEncoder.encode(any())).thenReturn(ENCODED_PASSWORD);
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validRegisterUserDto);
+        UserResponseDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         assertEquals("test@example.com", result.getEmail());
