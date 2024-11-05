@@ -6,10 +6,11 @@ import lombok.Data;
 
 @Data
 @Builder
-public class UserResponseDto {
+public class UserUpdateResponseDto {
     private Integer id;
     private String username;
     private String email;
     private String password;
     private Role role;
+    private String profileImage;
 }

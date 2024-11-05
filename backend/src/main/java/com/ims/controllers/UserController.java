@@ -7,6 +7,7 @@ import com.ims.models.User;
 import com.ims.models.dtos.request.RegisterUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.models.dtos.response.UserResponseDto;
+import com.ims.models.dtos.response.UserUpdateResponseDto;
 import com.ims.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +38,11 @@ public class UserController {
 
     // Update an existing user
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser (@PathVariable Integer id, @RequestBody @Valid UpdateUserDto updateUserDto) {
+    public ResponseEntity<UserUpdateResponseDto> updateUser (@PathVariable Integer id, @RequestBody @Valid UpdateUserDto updateUserDto) {
         if(id == 1) {
             throw new ForbiddenException("Cannot update SUPER user");
         }
-        User updatedUser  = userService.updateUser(id, updateUserDto);
+        UserUpdateResponseDto updatedUser  = userService.updateUser(id, updateUserDto);
         return new ResponseEntity<>(updatedUser , HttpStatus.OK);
     }
 

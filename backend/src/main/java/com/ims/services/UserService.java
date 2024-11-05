@@ -1,37 +1,22 @@
 package com.ims.services;
 
-import com.ims.exceptions.UnauthorizedException;
 import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.models.dtos.response.UserResponseDto;
+import com.ims.models.dtos.response.UserUpdateResponseDto;
 import com.ims.security.AuthenticationFacade;
-import com.ims.security.CustomUserDetails;
-import com.ims.models.Role;
 import com.ims.models.User;
 import com.ims.models.dtos.request.RegisterUserDto;
-import com.ims.models.dtos.response.UserDto;
 import com.ims.repository.UserRepository;
 import com.ims.security.UserSecurity;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +50,7 @@ public class UserService {
             log.info("Successfully created new user with ID: {}", savedUser.getId());
 
             // Convert and return UserResponseDto
-            return mapToUserResponseDto(savedUser);
+            return mapUserToResponseDto(registerUserDto, savedUser);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Database constraint violation while creating user", e);
@@ -77,7 +62,7 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUser(Integer id, UpdateUserDto updatedUser) {
+    public UserUpdateResponseDto updateUser(Integer id, UpdateUserDto updatedUser) {
         log.info("Attempting to update user with ID: {}", id);
 
         validateUserUpdatePermissions(id);
@@ -85,10 +70,15 @@ public class UserService {
         validateUserUpdate(updatedUser, existingUser);
 
         try {
+            // Update fields in the existing user
             updateUserFields(existingUser, updatedUser);
+
+            // Save the updated user
             User savedUser = userRepository.save(existingUser);
             log.info("Successfully updated user with ID: {}", savedUser.getId());
-            return savedUser;
+
+            // Convert and return UserUpdateResponseDto
+            return mapUserToUpdateResponseDto(updatedUser, savedUser);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Database constraint violation while updating user", e);
@@ -122,15 +112,25 @@ public class UserService {
         }
     }
 
-    private UserResponseDto mapToUserResponseDto(User user) {
+    private static UserResponseDto mapUserToResponseDto(RegisterUserDto registerUserDto, User savedUser) {
         return UserResponseDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .password(registerUserDto.getPassword())
+                .role(savedUser.getRole())
                 .build();
     }
 
+    private static UserUpdateResponseDto mapUserToUpdateResponseDto(UpdateUserDto updatedUser, User savedUser) {
+        return UserUpdateResponseDto.builder()
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .password(updatedUser.getPassword())
+                .role(savedUser.getRole())
+                .build();
+    }
     private void validateNewUser(RegisterUserDto registerUserDto) {
         userRepository.findByEmail(registerUserDto.getEmail()).ifPresent(user -> {
             log.warn("Attempt to register with existing email: {}", registerUserDto.getEmail());
@@ -145,7 +145,7 @@ public class UserService {
 
     private void validateUserUpdatePermissions(Integer userId) {
         Authentication authentication = authenticationFacade.getAuthentication();
-        boolean isManager = hasManagerRole(authentication);
+        boolean isManager = hasSuperRole(authentication);
 
         if (!isManager && !userSecurity.isCurrentUser(userId)) {
             log.warn("Unauthorized attempt to update user ID: {}", userId);
@@ -155,7 +155,7 @@ public class UserService {
 
     private void validateUserDeletionPermissions(Integer userId) {
         Authentication authentication = authenticationFacade.getAuthentication();
-        boolean isManager = hasManagerRole(authentication);
+        boolean isManager = hasSuperRole(authentication);
 
         if (!isManager && !userSecurity.isCurrentUser(userId)) {
             log.warn("Unauthorized attempt to delete user ID: {}", userId);
@@ -195,8 +195,8 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
     }
 
-    private boolean hasManagerRole(Authentication authentication) {
+    private boolean hasSuperRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_SUPER"));
     }
 }
