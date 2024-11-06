@@ -14,7 +14,9 @@ public class UserSecurity {
         }
 
         Object principal = authentication.getPrincipal();
-        if (principal instanceof User) {
+        if (principal instanceof CustomUserDetails) {
+            return ((CustomUserDetails) principal).user().getId().equals(userId);
+        } else if (principal instanceof User) {
             return ((User) principal).getId().equals(userId);
         }
         return false;

@@ -5,7 +5,11 @@ import com.ims.models.User;
 import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
 import com.ims.models.dtos.response.UserResponseDto;
+import com.ims.models.dtos.response.UserUpdateResponseDto;
 import com.ims.repository.UserRepository;
+import com.ims.security.AuthenticationFacade;
+import com.ims.security.UserSecurity;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,8 +18,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Collections;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +46,15 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    @Mock
+    private AuthenticationFacade authenticationFacade;
+
+    @Mock
+    private AuthenticationService authenticationService;
+
+    @Mock
+    private UserSecurity userSecurity;
 
     private CreateUserDto validCreateUserDto;
     private User savedUser;
@@ -72,6 +94,27 @@ class UserServiceTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+
+
+    private void mockCurrentUser(User user) {
+        Authentication authentication = mock(Authentication.class);
+        // Return User directly instead of CustomUserDetails
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authentication.isAuthenticated()).thenReturn(true);  // Add this line
+        when(SecurityContextHolder.getContext().getAuthentication()).thenReturn(authentication);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    }
+
+    // Updated helper method if you want to reuse it in other tests
+    private void setUpSecurityContext(User user) {
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user,
+                user.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     @Test
@@ -160,104 +203,164 @@ class UserServiceTest {
         ));
     }
 
-    /*
     @Test
-    void updateUser_WithValidData_ShouldReturnUpdatedResponse() {
+    void updateUser_WithRegularUserUpdatingOwnProfile_ShouldSucceed() {
         // Arrange
-        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
-        when(passwordEncoder.encode(any())).thenReturn("newEncodedPassword");
+        User regularUser = new User("regular", "regular@example.com", "encodedPassword", Role.CLIENT);
+        regularUser.setId(1);
+
+        // Mock authentication facade to return regular user auth
+        Authentication regularAuth = new UsernamePasswordAuthenticationToken(
+                regularUser,
+                regularUser.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_CLIENT"))
+        );
+        when(authenticationFacade.getAuthentication()).thenReturn(regularAuth);
+
+        // Mock security check for own profile
+        when(userSecurity.isCurrentUser(regularUser.getId())).thenReturn(true);
+
+        // Mock repository calls
+        when(userRepository.findById(regularUser.getId())).thenReturn(Optional.of(regularUser));
+        when(passwordEncoder.encode(updatedUserDto.getPassword())).thenReturn("newEncodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(regularUser);
 
         // Act
-        UserUpdateResponseDto result = userService.updateUser(existingUser.getId(), updatedUserDto);
+        UserUpdateResponseDto result = userService.updateUser(regularUser.getId(), updatedUserDto);
 
         // Assert
         assertNotNull(result);
-        assertEquals(updatedUserDto.getUsername(), result.getUsername());
-        assertEquals(updatedUserDto.getEmail().toLowerCase(), result.getEmail());
-        assertEquals("newEncodedPassword", result.getPassword());
+        verify(authenticationFacade).getAuthentication();
+        verify(userSecurity).isCurrentUser(regularUser.getId());
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void updateUser_WithDataIntegrityViolation_ShouldThrowIllegalStateException() {
+    void updateUser_WithSuperUser_ShouldUpdateAnyProfile() {
         // Arrange
-        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate entry"));
+        // Create super user
+        User superUser = new User("superuser", "super@example.com", "encodedPassword", Role.SUPER);
+        superUser.setId(1);
 
-        // Act & Assert
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> userService.updateUser(existingUser.getId(), updatedUserDto)
+        // Create target user to be updated
+        User targetUser = new User("targetUser", "target@example.com", "encodedPassword", Role.CLIENT);
+        targetUser.setId(2);
+        targetUser.setProfileImage("oldImage.jpg");
+
+        // Set up super user authentication
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                superUser,
+                superUser.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_SUPER"))
         );
+        when(authenticationFacade.getAuthentication()).thenReturn(authentication);
 
-        assertTrue(exception.getMessage().contains("Could not update user"));
-        assertTrue(exception.getCause() instanceof DataIntegrityViolationException);
-    }
-
-    @Test
-    void updateUser_WithNonExistentUser_ShouldThrowEntityNotFoundException() {
-        // Arrange
-        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.empty());
-
-        // Act & Assert
-        EntityNotFoundException exception = assertThrows(
-                EntityNotFoundException.class,
-                () -> userService.updateUser(existingUser.getId(), updatedUserDto)
-        );
-
-        assertEquals("User not found with ID: " + existingUser.getId(), exception.getMessage());
-    }
-
-    @Test
-    void updateUser_UnauthorizedUser_ShouldThrowAccessDeniedException() {
-        // Arrange
-        when(userSecurity.isCurrentUser(existingUser.getId())).thenReturn(false);
-
-        // Act & Assert
-        assertThrows(AccessDeniedException.class, () ->
-                userService.updateUser(existingUser.getId(), updatedUserDto));
-    }
-
-    @Test
-    void deleteUser_WithExistingUser_ShouldDeleteUser() {
-        // Arrange
-        when(userRepository.existsById(existingUser.getId())).thenReturn(true);
+        // No need to verify isCurrentUser for super user
+        when(userRepository.findById(targetUser.getId())).thenReturn(Optional.of(targetUser));
+        when(passwordEncoder.encode(updatedUserDto.getPassword())).thenReturn("newEncodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(targetUser);
 
         // Act
-        userService.deleteUser(existingUser.getId());
+        UserUpdateResponseDto result = userService.updateUser(targetUser.getId(), updatedUserDto);
 
         // Assert
-        verify(userRepository).deleteById(existingUser.getId());
+        assertNotNull(result);
+        assertEquals(targetUser.getId(), result.getId());
+        assertEquals(updatedUserDto.getUsername(), result.getUsername());
+        assertEquals(updatedUserDto.getEmail().toLowerCase(), result.getEmail());
+
+        // Verify that isCurrentUser was never called for super user
+        verify(userSecurity, never()).isCurrentUser(any());
+    }
+
+    @Test
+    void updateUser_WithRegularUserTryingToUpdateOtherProfile_ShouldThrowException() {
+        // Arrange
+        User regularUser = new User("regular", "regular@example.com", "encodedPassword", Role.CLIENT);
+        regularUser.setId(1);
+
+        User targetUser = new User("target", "target@example.com", "encodedPassword", Role.MANAGER);
+        targetUser.setId(2);
+
+        Authentication regularAuth = new UsernamePasswordAuthenticationToken(
+                regularUser,
+                regularUser.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_CLIENT"))
+        );
+        when(authenticationFacade.getAuthentication()).thenReturn(regularAuth);
+        when(userSecurity.isCurrentUser(targetUser.getId())).thenReturn(false);
+
+        // Act & Assert
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> userService.updateUser(targetUser.getId(), updatedUserDto)
+        );
+
+        assertEquals("You are not authorized to update this user", exception.getMessage());
+        verify(authenticationFacade).getAuthentication();
+        verify(userSecurity).isCurrentUser(targetUser.getId());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void deleteUser_SuccessfulDeletion() {
+        // Arrange
+        Integer userId = 1;
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userSecurity.isCurrentUser(userId)).thenReturn(true);
+        when(authenticationFacade.getAuthentication())
+                .thenReturn(new TestingAuthenticationToken(null, null, "ROLE_CLIENT"));
+
+        // Act
+        assertDoesNotThrow(() -> userService.deleteUser(userId));
+
+        // Assert
+        verify(userRepository, times(1)).deleteById(userId);
     }
 
     @Test
     void deleteUser_WithNonExistentUser_ShouldThrowEntityNotFoundException() {
         // Arrange
-        when(userRepository.existsById(existingUser.getId())).thenReturn(false);
+        Integer userId = 1;
+        when(userRepository.existsById(userId)).thenReturn(false);
+        when(authenticationFacade.getAuthentication())
+                .thenReturn(new TestingAuthenticationToken(null, null, "ROLE_MANAGER"));
+        when(userSecurity.isCurrentUser(userId)).thenReturn(true);
 
         // Act & Assert
         EntityNotFoundException exception = assertThrows(
                 EntityNotFoundException.class,
-                () -> userService.deleteUser(existingUser.getId())
+                () -> userService.deleteUser(userId)
         );
 
-        assertEquals("User not found with ID: " + existingUser.getId(), exception.getMessage());
+        assertEquals("User not found with ID: " + userId, exception.getMessage());
+        verify(userRepository, never()).deleteById(any());
     }
 
     @Test
-    void deleteUser_WithDataIntegrityViolation_ShouldThrowIllegalStateException() {
+    void deleteUser_UnauthorizedUser_ShouldThrowAccessDeniedException() {
+        when(userSecurity.isCurrentUser(1)).thenReturn(false);
+        when(authenticationFacade.getAuthentication()).thenReturn(new TestingAuthenticationToken(null, null, "ROLE_CLIENT"));
+
+        assertThrows(AccessDeniedException.class, () -> userService.deleteUser(1));
+    }
+
+    @Test
+    void deleteUser_WithDependencies_ShouldThrowIllegalStateException() {
         // Arrange
-        when(userRepository.existsById(existingUser.getId())).thenReturn(true);
-        doThrow(new DataIntegrityViolationException("Constraint violation")).when(userRepository).deleteById(existingUser.getId());
+        Integer userId = 1;
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(authenticationFacade.getAuthentication())
+                .thenReturn(new TestingAuthenticationToken(null, null, "ROLE_MANAGER"));
+        when(userSecurity.isCurrentUser(userId)).thenReturn(true);
+        doThrow(DataIntegrityViolationException.class).when(userRepository).deleteById(userId);
 
         // Act & Assert
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> userService.deleteUser(existingUser.getId())
+                () -> userService.deleteUser(userId)
         );
 
-        assertTrue(exception.getMessage().contains("Could not delete user due to existing dependencies"));
+        assertEquals("Could not delete user due to existing dependencies", exception.getMessage());
     }
-     */
 }

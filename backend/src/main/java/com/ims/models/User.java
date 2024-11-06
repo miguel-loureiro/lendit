@@ -61,6 +61,12 @@ public class User implements UserDetails {
         this.loans = loans;
     }
 
+    public <T> User(String testEmail, String password, List<T> ts) {
+    }
+
+    public User(String mail, String password, Role role) {
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class Item {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -25,71 +24,78 @@ public class Item {
     private String designation;
 
     @Column(nullable = false, unique = true, length = 13)
-    private String barcode ="";
+    private String barcode;
 
     @Column(nullable = false)
     private String brand;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Category category;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal purchasePrice = BigDecimal.ZERO;
+    private BigDecimal purchasePrice;
 
     @Column(nullable = false)
-    private Integer stockQuantity = 0;
+    private Integer stockQuantity;
 
     @Version
     @Column
     private Long version;
 
-    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("requestDate DESC")
     private Set<ItemRequest> requests = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private Set<Loan> loans = new HashSet<>(); // Add this field to track loans
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Loan> loans = new HashSet<>();
 
-    // Constructor without version
+    // Constructor with all fields
     public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, int stockQuantity) {
-        this.designation = designation;
-        this.barcode = barcode; // Ensure this is not null before calling this constructor
-        this.brand = brand;
-        this.category = category;
-        this.purchasePrice = purchasePrice;
+        this.designation = Objects.requireNonNull(designation, "Designation cannot be null");
+        this.barcode = Objects.requireNonNull(barcode, "Barcode cannot be null");
+        this.brand = Objects.requireNonNull(brand, "Brand cannot be null");
+        this.category = Objects.requireNonNull(category, "Category cannot be null");
+        this.purchasePrice = Objects.requireNonNull(purchasePrice, "Purchase price cannot be null");
         this.stockQuantity = stockQuantity;
     }
 
     // Default constructor (required by JPA)
-    protected Item() {
+    public Item() {
+        this.purchasePrice = BigDecimal.ZERO;
+        this.stockQuantity = 0;
     }
 
+    // Check only stock quantity
     public boolean isAvailable() {
-        return getAvailableQuantity() > 0; // Check only stock quantity
+        return getAvailableQuantity() > 0;
     }
 
+    // Check stock and pending requests
     public boolean isAvailableForDirectLoan() {
-        return getAvailableQuantity() > 0 && getPendingRequests().isEmpty(); // Check stock and pending requests
+        return getAvailableQuantity() > 0 && getPendingRequests().isEmpty();
     }
 
+    // Calculate available quantity considering active loans
     public int getAvailableQuantity() {
         return stockQuantity - getActiveLoans().size();
     }
 
+    // Get list of active loans
     public List<Loan> getActiveLoans() {
         return loans.stream()
-                .filter(loan -> loan.getStatus() == LoanStatus.ACTIVE ||
-                        loan.getStatus() == LoanStatus.OVERDUE)
+                .filter(loan -> loan.getStatus() == LoanStatus.ACTIVE || loan.getStatus() == LoanStatus.OVERDUE)
                 .collect(Collectors.toList());
     }
 
+    // Get list of pending requests
     public List<ItemRequest> getPendingRequests() {
         return requests.stream()
                 .filter(request -> request.getStatus() == ItemRequestStatus.PENDING)
                 .collect(Collectors.toList());
     }
 
+    // Get the next pending request, if available
     public Optional<ItemRequest> getNextPendingRequest() {
         return requests.stream()
                 .filter(request -> request.getStatus() == ItemRequestStatus.PENDING)

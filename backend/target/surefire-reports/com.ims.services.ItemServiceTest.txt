@@ -1,0 +1,22 @@
+-------------------------------------------------------------------------------
+Test set: com.ims.services.ItemServiceTest
+-------------------------------------------------------------------------------
+Tests run: 12, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.097 s <<< FAILURE! -- in com.ims.services.ItemServiceTest
+com.ims.services.ItemServiceTest.testUpdateItem_OptimisticLockingFailure -- Time elapsed: 0.002 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <org.springframework.dao.OptimisticLockingFailureException> but was: <java.lang.NullPointerException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.ims.services.ItemServiceTest.testUpdateItem_OptimisticLockingFailure(ItemServiceTest.java:208)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: java.lang.NullPointerException: Cannot invoke "com.ims.models.Item.getId()" because "updatedItem" is null
+	at com.ims.services.ItemService.lambda$updateItem$0(ItemService.java:99)
+	at java.base/java.util.Optional.map(Optional.java:260)
+	at com.ims.services.ItemService.updateItem(ItemService.java:72)
+	at com.ims.services.ItemServiceTest.lambda$testUpdateItem_OptimisticLockingFailure$4(ItemServiceTest.java:208)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+

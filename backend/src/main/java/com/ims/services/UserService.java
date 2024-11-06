@@ -145,9 +145,9 @@ public class UserService {
 
     private void validateUserUpdatePermissions(Integer userId) {
         Authentication authentication = authenticationFacade.getAuthentication();
-        boolean isManager = hasSuperRole(authentication);
+        boolean isSuper = hasSuperRole(authentication);
 
-        if (!isManager && !userSecurity.isCurrentUser(userId)) {
+        if (!isSuper && !userSecurity.isCurrentUser(userId)) {
             log.warn("Unauthorized attempt to update user ID: {}", userId);
             throw new AccessDeniedException("You are not authorized to update this user");
         }
@@ -155,9 +155,9 @@ public class UserService {
 
     private void validateUserDeletionPermissions(Integer userId) {
         Authentication authentication = authenticationFacade.getAuthentication();
-        boolean isManager = hasSuperRole(authentication);
+        boolean isSuper = hasSuperRole(authentication);
 
-        if (!isManager && !userSecurity.isCurrentUser(userId)) {
+        if (!isSuper && !userSecurity.isCurrentUser(userId)) {
             log.warn("Unauthorized attempt to delete user ID: {}", userId);
             throw new AccessDeniedException("You are not authorized to delete this user");
         }

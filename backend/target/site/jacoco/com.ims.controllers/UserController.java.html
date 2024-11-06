@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.controllers</a> &gt; <span class="el_source">UserController.java</span></div><h1>UserController.java</h1><pre class="source lang-java linenums">package com.ims.controllers;
+
+import com.ims.exceptions.ForbiddenException;
+import com.ims.exceptions.InvalidUserRoleException;
+import com.ims.models.Role;
+import com.ims.models.dtos.request.CreateUserDto;
+import com.ims.models.dtos.request.UpdateUserDto;
+import com.ims.models.dtos.response.UserResponseDto;
+import com.ims.models.dtos.response.UserUpdateResponseDto;
+import com.ims.services.UserService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(&quot;/auth/users&quot;)
+public class UserController {
+
+    private final UserService userService;
+
+    @Autowired
+<span class="fc" id="L24">    public UserController(UserService userService) {</span>
+<span class="fc" id="L25">        this.userService = userService;</span>
+<span class="fc" id="L26">    }</span>
+
+    // Create a new user
+    @PostMapping(&quot;/new&quot;)
+    public ResponseEntity&lt;UserResponseDto&gt; createUser (@RequestBody @Valid CreateUserDto createUserDto) {
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if(createUserDto.getRole() == Role.SUPER) {</span>
+<span class="nc" id="L32">            throw new InvalidUserRoleException(&quot;Cannot create SUPER user&quot;);</span>
+        }
+<span class="nc" id="L34">        UserResponseDto createdUser  = userService.createUser(createUserDto);</span>
+<span class="nc" id="L35">        return new ResponseEntity&lt;&gt;(createdUser , HttpStatus.CREATED);</span>
+    }
+
+    // Update an existing user
+    @PutMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;UserUpdateResponseDto&gt; updateUser (@PathVariable Integer id, @RequestBody @Valid UpdateUserDto updateUserDto) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if(id == 1) {</span>
+<span class="nc" id="L42">            throw new ForbiddenException(&quot;Cannot update SUPER user&quot;);</span>
+        }
+<span class="nc" id="L44">        UserUpdateResponseDto updatedUser  = userService.updateUser(id, updateUserDto);</span>
+<span class="nc" id="L45">        return new ResponseEntity&lt;&gt;(updatedUser , HttpStatus.OK);</span>
+    }
+
+    // Delete a user
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteUser (@PathVariable Integer id) {
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if(id == 1) {</span>
+<span class="nc" id="L52">            throw new ForbiddenException(&quot;Cannot delete SUPER user&quot;);</span>
+        }
+<span class="nc" id="L54">        userService.deleteUser (id);</span>
+<span class="nc" id="L55">        return new ResponseEntity&lt;&gt;(HttpStatus.NO_CONTENT);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
