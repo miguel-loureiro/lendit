@@ -2,7 +2,7 @@
 Test set: com.ims.security.JwtServiceTest
 -------------------------------------------------------------------------------
 Tests run: 9, Failures: 3, Errors: 3, Skipped: 0, Time elapsed: 0.611 s <<< FAILURE! -- in com.ims.security.JwtServiceTest
-com.ims.security.JwtServiceTest.validateToken_WithValidToken_ShouldReturnTrue -- Time elapsed: 0.048 s <<< ERROR!
+com.ims.security.JwtServiceTest.validateToken_WithValidToken_ShouldReturnTrue -- Time elapsed: 0.046 s <<< ERROR!
 java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "email" is null
 	at com.ims.security.JwtService.validateToken(JwtService.java:44)
 	at com.ims.security.JwtServiceTest.validateToken_WithValidToken_ShouldReturnTrue(JwtServiceTest.java:68)
@@ -18,7 +18,7 @@ java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "e
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.security.JwtServiceTest.extractClaim_ShouldReturnCorrectClaim -- Time elapsed: 0.004 s <<< FAILURE!
+com.ims.security.JwtServiceTest.extractClaim_ShouldReturnCorrectClaim -- Time elapsed: 0.005 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <test@example.com> but was: <null>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -57,7 +57,7 @@ org.opentest4j.AssertionFailedError: expected: <test@example.com> but was: <null
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.security.JwtServiceTest.validateToken_WithInvalidEmail_ShouldReturnFalse -- Time elapsed: 0.002 s <<< ERROR!
+com.ims.security.JwtServiceTest.validateToken_WithInvalidEmail_ShouldReturnFalse -- Time elapsed: 0.003 s <<< ERROR!
 java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "email" is null
 	at com.ims.security.JwtService.validateToken(JwtService.java:44)
 	at com.ims.security.JwtServiceTest.validateToken_WithInvalidEmail_ShouldReturnFalse(JwtServiceTest.java:92)

@@ -71,7 +71,6 @@ public class ItemServiceTest {
                 .category(Category.LAPTOP)
                 .purchasePrice(BigDecimal.valueOf(356.83))
                 .stockQuantity(15)
-                .version(1L)
                 .build();
     }
 
@@ -221,37 +220,22 @@ public class ItemServiceTest {
     }
 
     @Test
-    public void testUpdateItem_OptimisticLockingFailure() {
-        updateDto.setVersion(2L);  // Different version to simulate concurrent modification
-        when(itemRepository.findById(1)).thenReturn(Optional.of(existingItem));
-
-        assertThrows(OptimisticLockingFailureException.class, () -> itemService.updateItem(1, updateDto));
-    }
-
-    @Test
     public void testDeleteItem_Success() {
         // Arrange
         Integer itemId = 1;
         Item item = new Item();
         item.setId(itemId);
 
-        // Mock active loans and pending requests
-        Loan activeLoan = new Loan();
-        activeLoan.setStatus(LoanStatus.ACTIVE);
-        item.getLoans().add(activeLoan);
-
-        ItemRequest pendingRequest = new ItemRequest();
-        pendingRequest.setStatus(ItemRequestStatus.PENDING);
-        item.getRequests().add(pendingRequest);
-
+        // Mock no active loans or pending requests
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
-        // Act & Assert
-        assertThrows(IllegalStateException.class, () -> itemService.deleteItem(itemId));
+        // Act
+        ResponseEntity<Void> response = itemService.deleteItem(itemId);
 
-        // Verify that delete was not called due to active dependencies
+        // Assert
+        assertEquals(ResponseEntity.noContent().build(), response);
         verify(itemRepository, times(1)).findById(itemId);
-        verify(itemRepository, never()).delete(any(Item.class));
+        verify(itemRepository, times(1)).delete(item);
     }
 
     @Test

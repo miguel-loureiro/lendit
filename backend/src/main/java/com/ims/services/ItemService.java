@@ -104,7 +104,7 @@ public class ItemService {
         log.info("Successfully updated item with ID: {}", id);
         return ResponseEntity.ok(responseDto);
     }
-    
+
     public ResponseEntity<Void> deleteItem(Integer id) {
         log.info("Attempting to delete item with ID: {}", id);
 
