@@ -88,6 +88,12 @@ public class Item {
                 .collect(Collectors.toList());
     }
 
+    // Add a new active loan to the item
+    public void addActiveLoan(Loan loan) {
+        loans.add(loan);
+        stockQuantity--;
+    }
+
     // Get list of pending requests
     public List<ItemRequest> getPendingRequests() {
         return requests.stream()

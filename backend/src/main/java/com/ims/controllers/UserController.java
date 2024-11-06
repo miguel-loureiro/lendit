@@ -5,8 +5,8 @@ import com.ims.exceptions.InvalidUserRoleException;
 import com.ims.models.Role;
 import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
-import com.ims.models.dtos.response.UserResponseDto;
-import com.ims.models.dtos.response.UserUpdateResponseDto;
+import com.ims.models.dtos.response.UserCreatedDto;
+import com.ims.models.dtos.response.UserUpdatedDto;
 import com.ims.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,21 +27,21 @@ public class UserController {
 
     // Create a new user
     @PostMapping("/new")
-    public ResponseEntity<UserResponseDto> createUser (@RequestBody @Valid CreateUserDto createUserDto) {
+    public ResponseEntity<UserCreatedDto> createUser (@RequestBody @Valid CreateUserDto createUserDto) {
         if(createUserDto.getRole() == Role.SUPER) {
             throw new InvalidUserRoleException("Cannot create SUPER user");
         }
-        UserResponseDto createdUser  = userService.createUser(createUserDto);
+        UserCreatedDto createdUser  = userService.createUser(createUserDto);
         return new ResponseEntity<>(createdUser , HttpStatus.CREATED);
     }
 
     // Update an existing user
     @PutMapping("/{id}")
-    public ResponseEntity<UserUpdateResponseDto> updateUser (@PathVariable Integer id, @RequestBody @Valid UpdateUserDto updateUserDto) {
+    public ResponseEntity<UserUpdatedDto> updateUser (@PathVariable Integer id, @RequestBody @Valid UpdateUserDto updateUserDto) {
         if(id == 1) {
             throw new ForbiddenException("Cannot update SUPER user");
         }
-        UserUpdateResponseDto updatedUser  = userService.updateUser(id, updateUserDto);
+        UserUpdatedDto updatedUser  = userService.updateUser(id, updateUserDto);
         return new ResponseEntity<>(updatedUser , HttpStatus.OK);
     }
 

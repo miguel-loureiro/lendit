@@ -4,15 +4,14 @@ import com.ims.models.Item;
 import com.ims.models.dtos.ItemDesignationAndCategoryDto;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.UpdateItemDto;
-import com.ims.models.dtos.response.ItemResponseDto;
-import com.ims.models.dtos.response.ItemUpdateResponseDto;
+import com.ims.models.dtos.response.ItemCreatedDto;
+import com.ims.models.dtos.response.ItemUpdatedDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,7 +64,7 @@ public class ItemService {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);
     }
 
-    public ResponseEntity<ItemUpdateResponseDto> updateItem(Integer id, UpdateItemDto updateDto) {
+    public ResponseEntity<ItemUpdatedDto> updateItem(Integer id, UpdateItemDto updateDto) {
         log.info("Attempting to update item with ID: {}", id);
 
         // Find the existing item
@@ -90,7 +89,7 @@ public class ItemService {
         Item updatedItem = itemRepository.save(existingItem);
 
         // Convert to response DTO
-        ItemUpdateResponseDto responseDto = ItemUpdateResponseDto.builder()
+        ItemUpdatedDto responseDto = ItemUpdatedDto.builder()
                 .id(updatedItem.getId())
                 .designation(updatedItem.getDesignation())
                 .barcode(updatedItem.getBarcode())
@@ -131,8 +130,8 @@ public class ItemService {
     }
 
     // Helper method to convert Item to ItemResponseDto
-    private ItemResponseDto convertToDto(Item item) {
-        return ItemResponseDto.builder()
+    private ItemCreatedDto convertToDto(Item item) {
+        return ItemCreatedDto.builder()
                 .id(item.getId())
                 .designation(item.getDesignation())
                 .barcode(item.getBarcode())
@@ -144,8 +143,8 @@ public class ItemService {
                 .build();
     }
 
-    private static ItemUpdateResponseDto getItemUpdateResponseDto(Item updatedItem) {
-        return ItemUpdateResponseDto.builder()
+    private static ItemUpdatedDto getItemUpdateResponseDto(Item updatedItem) {
+        return ItemUpdatedDto.builder()
                 .id(updatedItem.getId())
                 .designation(updatedItem.getDesignation())
                 .barcode(updatedItem.getBarcode())

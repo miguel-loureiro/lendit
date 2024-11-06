@@ -4,8 +4,8 @@ import com.ims.models.Role;
 import com.ims.models.User;
 import com.ims.models.dtos.request.CreateUserDto;
 import com.ims.models.dtos.request.UpdateUserDto;
-import com.ims.models.dtos.response.UserResponseDto;
-import com.ims.models.dtos.response.UserUpdateResponseDto;
+import com.ims.models.dtos.response.UserCreatedDto;
+import com.ims.models.dtos.response.UserUpdatedDto;
 import com.ims.repository.UserRepository;
 import com.ims.security.AuthenticationFacade;
 import com.ims.security.UserSecurity;
@@ -23,7 +23,6 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -124,7 +123,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validCreateUserDto);
+        UserCreatedDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         assertNotNull(result);
@@ -145,7 +144,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validCreateUserDto);
+        UserCreatedDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         verify(userRepository).save(argThat(user ->
@@ -194,7 +193,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // Act
-        UserResponseDto result = userService.createUser(validCreateUserDto);
+        UserCreatedDto result = userService.createUser(validCreateUserDto);
 
         // Assert
         assertEquals("test@example.com", result.getEmail());
@@ -226,7 +225,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(regularUser);
 
         // Act
-        UserUpdateResponseDto result = userService.updateUser(regularUser.getId(), updatedUserDto);
+        UserUpdatedDto result = userService.updateUser(regularUser.getId(), updatedUserDto);
 
         // Assert
         assertNotNull(result);
@@ -261,7 +260,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(targetUser);
 
         // Act
-        UserUpdateResponseDto result = userService.updateUser(targetUser.getId(), updatedUserDto);
+        UserUpdatedDto result = userService.updateUser(targetUser.getId(), updatedUserDto);
 
         // Assert
         assertNotNull(result);

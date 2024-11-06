@@ -4,7 +4,7 @@ import com.ims.models.*;
 import com.ims.models.dtos.ItemDesignationAndCategoryDto;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.UpdateItemDto;
-import com.ims.models.dtos.response.ItemUpdateResponseDto;
+import com.ims.models.dtos.response.ItemUpdatedDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -186,10 +185,10 @@ public class ItemServiceTest {
         when(itemRepository.findByBarcode("987654321")).thenReturn(Optional.empty());
         when(itemRepository.save(any(Item.class))).thenReturn(existingItem);
 
-        ResponseEntity<ItemUpdateResponseDto> response = itemService.updateItem(1, updateDto);
+        ResponseEntity<ItemUpdatedDto> response = itemService.updateItem(1, updateDto);
 
         assertEquals(OK, response.getStatusCode());
-        ItemUpdateResponseDto responseDto = response.getBody();
+        ItemUpdatedDto responseDto = response.getBody();
         assertNotNull(responseDto);
         assertEquals("New Designation", responseDto.getDesignation());
         assertEquals("987654321", responseDto.getBarcode());

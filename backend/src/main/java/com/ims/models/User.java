@@ -115,4 +115,17 @@ public class User implements UserDetails {
                 ", profileImage='" + profileImage + '\'' +
                 '}';
     }
+
+    // Check if the user has any active or overdue loans for the given item
+    public boolean hasActiveLoanForItem(Item item) {
+        return loans.stream()
+                .filter(loan -> loan.getItem().equals(item))
+                .anyMatch(loan -> loan.getStatus() == LoanStatus.ACTIVE || loan.getStatus() == LoanStatus.OVERDUE);
+    }
+
+    // Check if the user can borrow the item directly (item is available and user has no active loans for the item)
+    public boolean isAvailableForDirectLoan(Item item) {
+        return item.isAvailableForDirectLoan() && !hasActiveLoanForItem(item);
+    }
+
 }

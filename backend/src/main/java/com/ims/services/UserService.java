@@ -1,8 +1,8 @@
 package com.ims.services;
 
 import com.ims.models.dtos.request.UpdateUserDto;
-import com.ims.models.dtos.response.UserResponseDto;
-import com.ims.models.dtos.response.UserUpdateResponseDto;
+import com.ims.models.dtos.response.UserCreatedDto;
+import com.ims.models.dtos.response.UserUpdatedDto;
 import com.ims.security.AuthenticationFacade;
 import com.ims.models.User;
 import com.ims.models.dtos.request.CreateUserDto;
@@ -28,7 +28,7 @@ public class UserService {
     private final UserSecurity userSecurity;
 
     @Transactional
-    public UserResponseDto createUser(CreateUserDto createUserDto) {
+    public UserCreatedDto createUser(CreateUserDto createUserDto) {
         log.info("Starting user registration process for email: {}", createUserDto.getEmail());
         validateNewUser(createUserDto);
 
@@ -62,7 +62,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserUpdateResponseDto updateUser(Integer id, UpdateUserDto updatedUser) {
+    public UserUpdatedDto updateUser(Integer id, UpdateUserDto updatedUser) {
         log.info("Attempting to update user with ID: {}", id);
 
         validateUserUpdatePermissions(id);
@@ -112,8 +112,8 @@ public class UserService {
         }
     }
 
-    private static UserResponseDto mapUserToResponseDto(CreateUserDto createUserDto, User savedUser) {
-        return UserResponseDto.builder()
+    private static UserCreatedDto mapUserToResponseDto(CreateUserDto createUserDto, User savedUser) {
+        return UserCreatedDto.builder()
                 .id(savedUser.getId())
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
@@ -122,8 +122,8 @@ public class UserService {
                 .build();
     }
 
-    private static UserUpdateResponseDto mapUserToUpdateResponseDto(UpdateUserDto updatedUser, User savedUser) {
-        return UserUpdateResponseDto.builder()
+    private static UserUpdatedDto mapUserToUpdateResponseDto(UpdateUserDto updatedUser, User savedUser) {
+        return UserUpdatedDto.builder()
                 .id(savedUser.getId())
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())

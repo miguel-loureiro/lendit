@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 @Data
 @Builder
-public class ItemResponseDto {
+public class ItemUpdatedDto {
     private Integer id;
     private String designation;
     private String barcode;
