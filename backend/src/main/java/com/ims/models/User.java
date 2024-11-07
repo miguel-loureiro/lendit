@@ -120,7 +120,7 @@ public class User implements UserDetails {
     public boolean hasActiveLoanForItem(Item item) {
         return loans.stream()
                 .filter(loan -> loan.getItem().equals(item))
-                .anyMatch(loan -> loan.getStatus() == LoanStatus.ACTIVE || loan.getStatus() == LoanStatus.OVERDUE);
+                .anyMatch(loan -> loan.getStatus() == LoanStatus.ACTIVE);
     }
 
     // Check if the user can borrow the item directly (item is available and user has no active loans for the item)

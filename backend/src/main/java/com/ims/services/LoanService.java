@@ -70,23 +70,22 @@ public class LoanService {
     public LoanUpdatedDto extendLoan(ExtendLoanDto extendLoanDto) {
         Loan loan = loanRepository.findById(extendLoanDto.getLoanId())
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+        System.out.println("Loan status: " + loan.getStatus());
 
-        // Validate loan status
-        if (loan.getStatus() != LoanStatus.ACTIVE) {
-            throw new IllegalStateException("Can only extend active loans");
+        // Can only extend ACTIVE or EXTENDED loans
+        if (!loan.getStatus().canBeExtended()) {
+            throw new IllegalStateException("Can only extend active or extended loans");
         }
 
-        // Validate new end date
-        if (extendLoanDto.getNewEndDate().isBefore(loan.getEndDate())) {
-            throw new IllegalArgumentException("New end date must be after current end date");
-        }
+        validateExtensionDates(loan, extendLoanDto.getNewEndDate());
 
-        if (extendLoanDto.getNewEndDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("New end date cannot be in the past");
-        }
-
-        // Update loan end date
+        // Create a new version of the loan with updated status and end date
+        LocalDate originalEndDate = loan.getEndDate();
         loan.setEndDate(extendLoanDto.getNewEndDate());
+        loan.setStatus(LoanStatus.EXTENDED);
+        loan.setPreviousExtendedDate(originalEndDate);
+
+        // Save will automatically increment the version number due to @Version
         loan = loanRepository.save(loan);
 
         return createLoanUpdatedDto(loan);
@@ -95,42 +94,52 @@ public class LoanService {
     public LoanUpdatedDto terminateLoan(TerminateLoanDto terminateLoanDto) {
         Loan loan = loanRepository.findById(terminateLoanDto.getLoanId())
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-
-        // Validate loan status
-        if (loan.getStatus() != LoanStatus.ACTIVE) {
-            throw new IllegalStateException("Can only terminate active loans");
+        // Can terminate both ACTIVE and EXTENDED loans
+        if (loan.getStatus() != LoanStatus.ACTIVE && loan.getStatus() != LoanStatus.EXTENDED) {
+            throw new IllegalStateException("Can only terminate active or extended loans");
         }
-
-        // Set return date
         LocalDate returnDate = terminateLoanDto.getReturnDate() != null ?
                 terminateLoanDto.getReturnDate() : LocalDate.now();
-
-        // Validate return date
-        if (returnDate.isBefore(loan.getStartDate())) {
-            throw new IllegalArgumentException("Return date cannot be before loan start date");
-        }
-
-        // Update loan status and return date
-        loan.setStatus(LoanStatus.CANCELLED);
-        loan.setReturnDate(returnDate);
+        validateTerminationDate(loan, returnDate);
+        // Update loan status and return date while maintaining history
+        loan.terminate(returnDate);
+        // Save will automatically increment the version number due to @Version
         loan = loanRepository.save(loan);
-
-        // Update item availability
+        // Update item availability but keep the loan record
         Item item = loan.getItem();
         item.removeActiveLoan(loan);
         itemRepository.save(item);
-
         return createLoanUpdatedDto(loan);
     }
 
+    private void validateExtensionDates(Loan loan, LocalDate newEndDate) {
+        if (newEndDate.isBefore(loan.getEndDate())) {
+            throw new IllegalArgumentException("New end date must be after current end date");
+        }
+
+        if (newEndDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("New end date cannot be in the past");
+        }
+
+        System.out.println("Current loan end date: " + loan.getEndDate());
+        System.out.println("New end date: " + newEndDate);
+    }
+
+    private void validateTerminationDate(Loan loan, LocalDate returnDate) {
+        if (returnDate.isBefore(loan.getStartDate())) {
+            throw new IllegalArgumentException("Return date cannot be before loan start date");
+        }
+    }
+
     private LoanUpdatedDto createLoanUpdatedDto(Loan loan) {
+        LocalDate returnDate = loan.getReturnDate();
         return LoanUpdatedDto.builder()
                 .itemDesignation(loan.getItem().getDesignation())
                 .username(loan.getUser().getUsername())
                 .startDate(loan.getStartDate())
                 .endDate(loan.getEndDate())
                 .status(loan.getStatus())
-                .returnDate(loan.getReturnDate())
+                .returnDate(returnDate)
                 .build();
     }
 }

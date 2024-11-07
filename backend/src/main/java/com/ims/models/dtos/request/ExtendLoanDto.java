@@ -1,7 +1,7 @@
 package com.ims.models.dtos.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,9 +12,9 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 public class ExtendLoanDto {
-    @NotEmpty
+    @NotNull
     private Integer loanId;
-    @NotEmpty
+    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     private LocalDate newEndDate;
 }

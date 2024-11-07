@@ -37,7 +37,9 @@ CREATE TABLE loans (
     item_id INT NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
+    initial_end_date DATE NOT NULL,  -- New column to track initial end date
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    previous_extended_date DATE,
     version BIGINT NOT NULL,
     return_date DATE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

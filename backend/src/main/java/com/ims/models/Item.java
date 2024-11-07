@@ -84,7 +84,7 @@ public class Item {
     // Get list of active loans
     public List<Loan> getActiveLoans() {
         return loans.stream()
-                .filter(loan -> loan.getStatus() == LoanStatus.ACTIVE || loan.getStatus() == LoanStatus.OVERDUE)
+                .filter(loan -> loan.getStatus() == LoanStatus.ACTIVE || loan.getStatus() == LoanStatus.EXTENDED)
                 .collect(Collectors.toList());
     }
 
@@ -96,7 +96,6 @@ public class Item {
 
     // Remove an active loan to the item
     public void removeActiveLoan(Loan loan) {
-        loans.remove(loan);
         stockQuantity++;
     }
 
