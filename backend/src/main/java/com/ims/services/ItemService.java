@@ -1,7 +1,7 @@
 package com.ims.services;
 
 import com.ims.models.Item;
-import com.ims.models.dtos.ItemDesignationAndCategoryDto;
+import com.ims.models.dtos.ItemResponseDto;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.UpdateItemDto;
 import com.ims.models.dtos.response.ItemCreatedDto;
@@ -33,14 +33,14 @@ public class ItemService {
     private final UserRepository userRepository;
     private final UserService userService;
 
-    public ResponseEntity<Page<ItemDesignationAndCategoryDto>> getAllItems(
+    public ResponseEntity<Page<ItemResponseDto>> getAllItems(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) throws IOException {
 
         Pageable paging = PageRequest.of(page, size, Sort.by("designation").ascending());
         Page<Item> itemsPage = itemRepository.findAll(paging);
 
-        Page<ItemDesignationAndCategoryDto> itemDtos = itemsPage.map(ItemDesignationAndCategoryDto::new);
+        Page<ItemResponseDto> itemDtos = itemsPage.map(ItemResponseDto::new);
 
         return ResponseEntity.ok(itemDtos);
     }

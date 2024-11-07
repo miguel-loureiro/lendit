@@ -1,7 +1,7 @@
 package com.ims.services;
 
 import com.ims.models.*;
-import com.ims.models.dtos.ItemDesignationAndCategoryDto;
+import com.ims.models.dtos.ItemResponseDto;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.UpdateItemDto;
 import com.ims.models.dtos.response.ItemUpdatedDto;
@@ -115,7 +115,7 @@ public class ItemServiceTest {
         when(itemRepository.findAll(any(Pageable.class))).thenReturn(itemsPage);
 
         // Act
-        ResponseEntity<Page<ItemDesignationAndCategoryDto>> response = itemService.getAllItems(0, 10);
+        ResponseEntity<Page<ItemResponseDto>> response = itemService.getAllItems(0, 10);
 
         // Assert
         assertEquals(OK, response.getStatusCode());

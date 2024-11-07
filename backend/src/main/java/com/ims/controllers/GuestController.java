@@ -1,10 +1,7 @@
 package com.ims.controllers;
 
-import com.ims.models.dtos.ItemDesignationAndCategoryDto;
-import com.ims.repository.UserRepository;
-import com.ims.services.ItemRequestService;
+import com.ims.models.dtos.ItemResponseDto;
 import com.ims.services.ItemService;
-import com.ims.services.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,8 +22,8 @@ public class GuestController {
     }
 
     @GetMapping("/items")
-    public ResponseEntity<Page<ItemDesignationAndCategoryDto>> getAllItems(@RequestParam(defaultValue = "0") int page,
-                                                                           @RequestParam(defaultValue = "10") int size) throws IOException {
+    public ResponseEntity<Page<ItemResponseDto>> getAllItems(@RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "10") int size) throws IOException {
        return ResponseEntity.ok(itemService.getAllItems(page, size).getBody());
     }
 }
