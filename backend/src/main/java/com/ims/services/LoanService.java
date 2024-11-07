@@ -2,7 +2,10 @@ package com.ims.services;
 
 import com.ims.models.*;
 import com.ims.models.dtos.request.CreateLoanDto;
+import com.ims.models.dtos.request.ExtendLoanDto;
+import com.ims.models.dtos.request.TerminateLoanDto;
 import com.ims.models.dtos.response.LoanCreatedDto;
+import com.ims.models.dtos.response.LoanUpdatedDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.ItemRequestRepository;
 import com.ims.repository.LoanRepository;
@@ -61,6 +64,73 @@ public class LoanService {
                 .username(user.getUsername())
                 .startDate(loan.getStartDate())
                 .endDate(loan.getEndDate())
+                .build();
+    }
+
+    public LoanUpdatedDto extendLoan(ExtendLoanDto extendLoanDto) {
+        Loan loan = loanRepository.findById(extendLoanDto.getLoanId())
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+
+        // Validate loan status
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Can only extend active loans");
+        }
+
+        // Validate new end date
+        if (extendLoanDto.getNewEndDate().isBefore(loan.getEndDate())) {
+            throw new IllegalArgumentException("New end date must be after current end date");
+        }
+
+        if (extendLoanDto.getNewEndDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("New end date cannot be in the past");
+        }
+
+        // Update loan end date
+        loan.setEndDate(extendLoanDto.getNewEndDate());
+        loan = loanRepository.save(loan);
+
+        return createLoanUpdatedDto(loan);
+    }
+
+    public LoanUpdatedDto terminateLoan(TerminateLoanDto terminateLoanDto) {
+        Loan loan = loanRepository.findById(terminateLoanDto.getLoanId())
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+
+        // Validate loan status
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Can only terminate active loans");
+        }
+
+        // Set return date
+        LocalDate returnDate = terminateLoanDto.getReturnDate() != null ?
+                terminateLoanDto.getReturnDate() : LocalDate.now();
+
+        // Validate return date
+        if (returnDate.isBefore(loan.getStartDate())) {
+            throw new IllegalArgumentException("Return date cannot be before loan start date");
+        }
+
+        // Update loan status and return date
+        loan.setStatus(LoanStatus.CANCELLED);
+        loan.setReturnDate(returnDate);
+        loan = loanRepository.save(loan);
+
+        // Update item availability
+        Item item = loan.getItem();
+        item.removeActiveLoan(loan);
+        itemRepository.save(item);
+
+        return createLoanUpdatedDto(loan);
+    }
+
+    private LoanUpdatedDto createLoanUpdatedDto(Loan loan) {
+        return LoanUpdatedDto.builder()
+                .itemDesignation(loan.getItem().getDesignation())
+                .username(loan.getUser().getUsername())
+                .startDate(loan.getStartDate())
+                .endDate(loan.getEndDate())
+                .status(loan.getStatus())
+                .returnDate(loan.getReturnDate())
                 .build();
     }
 }

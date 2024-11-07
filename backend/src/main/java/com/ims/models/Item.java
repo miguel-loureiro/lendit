@@ -94,6 +94,12 @@ public class Item {
         stockQuantity--;
     }
 
+    // Remove an active loan to the item
+    public void removeActiveLoan(Loan loan) {
+        loans.remove(loan);
+        stockQuantity++;
+    }
+
     // Get list of pending requests
     public List<ItemRequest> getPendingRequests() {
         return requests.stream()

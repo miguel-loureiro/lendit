@@ -1,13 +1,13 @@
 package com.ims.controllers;
 
 import com.ims.models.Item;
-import com.ims.models.dtos.request.CreateItemDto;
-import com.ims.models.dtos.request.CreateLoanDto;
-import com.ims.models.dtos.request.UpdateItemDto;
+import com.ims.models.dtos.request.*;
 import com.ims.models.dtos.response.ItemUpdatedDto;
 import com.ims.models.dtos.response.LoanCreatedDto;
+import com.ims.models.dtos.response.LoanUpdatedDto;
 import com.ims.services.ItemService;
 import com.ims.services.LoanService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,9 +36,21 @@ public class ManagerController {
         return itemService.deleteItem(id);
     }
 
-    @PostMapping("loans/new")
-    public ResponseEntity<LoanCreatedDto> createLoan(@RequestBody CreateLoanDto createLoanDto) {
+    @PostMapping("loans/start")
+    public ResponseEntity<LoanCreatedDto> startLoan(@RequestBody CreateLoanDto createLoanDto) {
         LoanCreatedDto loanCreatedDto = loanService.startLoan(createLoanDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(loanCreatedDto);
+    }
+
+    @PutMapping("loans/extend")
+    public ResponseEntity<LoanUpdatedDto> extendLoan(@Valid @RequestBody ExtendLoanDto extendLoanDto) {
+        LoanUpdatedDto loanUpdatedDto = loanService.extendLoan(extendLoanDto);
+        return ResponseEntity.ok(loanUpdatedDto);
+    }
+
+    @PutMapping("loans/terminate")
+    public ResponseEntity<LoanUpdatedDto> terminateLoan(@Valid @RequestBody TerminateLoanDto terminateLoanDto) {
+        LoanUpdatedDto loanUpdatedDto = loanService.terminateLoan(terminateLoanDto);
+        return ResponseEntity.ok(loanUpdatedDto);
     }
 }

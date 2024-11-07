@@ -38,7 +38,7 @@ public class Loan {
     private Long version;
 
     // Add actual return date
-    private LocalDateTime returnDate;
+    private LocalDate returnDate;
 
     // Constructors, getters, and setters
     public Loan() {}
@@ -65,7 +65,7 @@ public class Loan {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Start date must be before end date");
         }
-        if (returnDate != null && returnDate.isBefore(startDate.atStartOfDay())) {
+        if (returnDate != null && returnDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Return date cannot be before start date");
         }
     }

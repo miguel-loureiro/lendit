@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,7 +25,7 @@ public class ItemRequest {
     private Item item;
 
     @Column(nullable = false)
-    private LocalDateTime requestDate;
+    private LocalDate requestDate;
 
     @Column(nullable = false)
     private Integer queuePosition;
@@ -33,13 +34,13 @@ public class ItemRequest {
     private ItemRequestStatus status;
 
     @Column
-    private LocalDateTime returnDate;
+    private LocalDate returnDate;
 
     @Version
     private Long version;
 
     public ItemRequest() {
-        this.requestDate = LocalDateTime.now();
+        this.requestDate = LocalDate.from(LocalDateTime.now());
         this.status = ItemRequestStatus.PENDING;
     }
 }
