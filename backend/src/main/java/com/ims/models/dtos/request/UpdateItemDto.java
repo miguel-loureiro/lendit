@@ -17,16 +17,13 @@ public class UpdateItemDto {
     @NotNull
     private String designation;
 
+    private String description;
+    private String category;
+    private String brand;
+
     @NotEmpty
     @NotNull
     private String barcode;
-
-    @NotEmpty
-    @NotNull
-    private String brand;
-
-    @Enumerated
-    private Category category;
 
     @NotNull
     @NotEmpty

@@ -11,9 +11,11 @@ import java.math.BigDecimal;
 public class ItemUpdatedDto {
     private Integer id;
     private String designation;
+    private String description;
+    private String category;
     private String barcode;
     private String brand;
-    private Category category;
+
     private BigDecimal purchasePrice;
     private Integer stockQuantity;
     private Long version;

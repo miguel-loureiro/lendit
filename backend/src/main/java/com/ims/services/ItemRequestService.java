@@ -4,102 +4,108 @@ import com.ims.models.Item;
 import com.ims.models.ItemRequest;
 import com.ims.models.ItemRequestStatus;
 import com.ims.models.User;
+import com.ims.models.dtos.request.ItemRequestDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.ItemRequestRepository;
+import com.ims.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
+
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-@Slf4j
 public class ItemRequestService {
-    private final ItemRequestRepository requestRepository;
-    private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final LoanService loanService;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
-    @Value("${item.request.expiration.hours:24}")
-    private int requestExpirationHours;
+    public ItemRequest createItemRequest(ItemRequestDto input) {
+        User user = userRepository.findByUsername(input.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
 
-    public ItemRequest createRequest(User user, Item item) {
-        // Check if user already has pending request
-        if (hasPendingRequest(user, item)) {
-            throw new IllegalStateException("User already has a pending request for this item");
-        }
-
-        // If item is available and no one is waiting, allow direct loan
-        if (item.isAvailableForDirectLoan()) {
-            throw new IllegalStateException("Item is available for direct loan");
-        }
-
-        // Get next position in queue
-        int nextPosition = requestRepository.findMaxPositionByItem(item).orElse(0) + 1;
-
-        ItemRequest request = new ItemRequest();
-        request.setUser(user);
-        request.setItem(item);
-        request.setQueuePosition(nextPosition);
-
-        request = requestRepository.save(request);
-
-        return request;
-    }
-
-    @Transactional
-    public void processItemReturn(Item item) {
-        // If item has pending requests and is now available
-        if (item.getAvailableQuantity() > 0) {
-            item.getNextPendingRequest().ifPresent(request -> {
-                request.setStatus(ItemRequestStatus.NOTIFIED);
-                requestRepository.save(request);
-            });
+        // Check if the item is available for direct loan
+        if (item.isAvailableForDirectLoan(input.getRequestedQuantity())) {
+            // Create the loan and fulfill the request
+            createLoanAndFulfillRequest(user, item, input.getRequestedQuantity());
+            return null; // No need to create a request
+        } else {
+            // Create a new item request and add it to the wait-list
+            return createWaitlistRequest(user, item, input.getRequestedQuantity());
         }
     }
 
-    @Scheduled(fixedRate = 3600000) // Every hour
-    public void processExpiredRequests() {
-        LocalDateTime expirationThreshold = LocalDateTime.now()
-                .minusHours(requestExpirationHours);
-
-        List<ItemRequest> expiredRequests = requestRepository
-                .findByStatusAndRequestDateBefore(
-                        ItemRequestStatus.NOTIFIED,
-                        expirationThreshold
-                );
-
-        for (ItemRequest request : expiredRequests) {
-            request.setStatus(ItemRequestStatus.EXPIRED);
-            requestRepository.save(request);
-
-            // Reorder remaining requests
-            reorderRequests(request.getItem());
-
-            // Notify next person if item is still available
-            processItemReturn(request.getItem());
-        }
-    }
-
-    private void reorderRequests(Item item) {
-        List<ItemRequest> pendingRequests = item.getPendingRequests();
-        for (int i = 0; i < pendingRequests.size(); i++) {
-            ItemRequest request = pendingRequests.get(i);
-            request.setQueuePosition(i + 1);
-            requestRepository.save(request);
-        }
-    }
-
-    private boolean hasPendingRequest(User user, Item item) {
-        return requestRepository.existsByUserAndItemAndStatusIn(
-                user,
-                item,
-                Set.of(ItemRequestStatus.PENDING, ItemRequestStatus.NOTIFIED)
+    private void createLoanAndFulfillRequest(User user, Item item, Integer requestedQuantity) {
+        // Create the loan
+        loanService.createLoan(
+                user.getId(),
+                item.getId(),
+                requestedQuantity,
+                LocalDate.now(),
+                LocalDate.now().plusDays(30)
         );
+
+        // Fulfill the request
+        fulfillItemRequest(requestedQuantity);
+    }
+
+    private ItemRequest createWaitlistRequest(User user, Item item, Integer requestedQuantity) {
+        ItemRequest itemRequest = new ItemRequest();
+        itemRequest.setUser(user);
+        itemRequest.setItem(item);
+        itemRequest.setRequestedQuantity(requestedQuantity);
+        itemRequest.setRequestDate(LocalDate.now());
+        itemRequest.setQueuePosition(getNextQueuePosition(item));
+        itemRequest.setStatus(ItemRequestStatus.WAITING);
+        return itemRequestRepository.save(itemRequest);
+    }
+
+    public void fulfillItemRequest(Integer itemRequestId) {
+        ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Item request not found"));
+        // Check if the item is available for direct loan
+        if (itemRequest.getItem().isAvailableForDirectLoan(itemRequest.getRequestedQuantity())) {
+            // Create the loan and fulfill the request
+            createLoanAndFulfillRequest(itemRequest.getUser(), itemRequest.getItem(), itemRequest.getRequestedQuantity());
+        } else {
+            // Update the request status to WAITING
+            itemRequest.setStatus(ItemRequestStatus.WAITING);
+            itemRequestRepository.save(itemRequest);
+        }
+    }
+
+    public void handleItemReturn(Integer itemId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        // Find the next request in the wait-list for the item
+        ItemRequest nextRequest = findNextWaitlistRequest(item);
+        if (nextRequest != null) {
+            // Create the loan and fulfill the request
+            createLoanAndFulfillRequest(nextRequest.getUser(), item, nextRequest.getRequestedQuantity());
+        } else {
+            // No more requests in the wait-list, mark the item as available
+            item.setAvailableForDirectLoan(true);
+            itemRepository.save(item);
+        }
+    }
+
+    private ItemRequest findNextWaitlistRequest(Item item) {
+        List<ItemRequest> waitlistRequests = itemRequestRepository.findByItemAndStatusOrderByQueuePositionAsc(item, ItemRequestStatus.WAITING);
+        if (!waitlistRequests.isEmpty()) {
+            return waitlistRequests.get(0);
+        }
+        return null;
+    }
+
+    private int getNextQueuePosition(Item item) {
+        // Logic to determine the next queue position for the item request
+        return itemRequestRepository.countByItemAndStatusIn(item, List.of(ItemRequestStatus.WAITING, ItemRequestStatus.FULFILLED)) + 1;
     }
 }

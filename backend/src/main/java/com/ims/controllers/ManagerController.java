@@ -47,21 +47,15 @@ public class ManagerController {
         return itemService.deleteItem(id);
     }
 
-    @PostMapping("loans/start")
-    public ResponseEntity<LoanCreatedDto> startLoan(@RequestBody CreateLoanDto createLoanDto) {
-        LoanCreatedDto loanCreatedDto = loanService.startLoan(createLoanDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(loanCreatedDto);
-    }
-
-    @PutMapping("loans/extend")
-    public ResponseEntity<LoanUpdatedDto> extendLoan(@Valid @RequestBody ExtendLoanDto extendLoanDto) {
-        LoanUpdatedDto loanUpdatedDto = loanService.extendLoan(extendLoanDto);
+    @PutMapping("loans/extend/{id}")
+    public ResponseEntity<LoanUpdatedDto> extendLoan(@PathVariable Integer id, @RequestBody ExtendLoanDto input) {
+        LoanUpdatedDto loanUpdatedDto = loanService.extendLoan(id, input.getNewEndDate());
         return ResponseEntity.ok(loanUpdatedDto);
     }
 
-    @PutMapping("loans/end")
-    public ResponseEntity<LoanUpdatedDto> terminateLoan(@Valid @RequestBody TerminateLoanDto terminateLoanDto) {
-        LoanUpdatedDto loanUpdatedDto = loanService.terminateLoan(terminateLoanDto);
+    @PutMapping("loans/end/{id}")
+    public ResponseEntity<LoanUpdatedDto> terminateLoan(@PathVariable Integer id) {
+        LoanUpdatedDto loanUpdatedDto = loanService.terminateLoan(id);
         return ResponseEntity.ok(loanUpdatedDto);
     }
 

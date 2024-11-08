@@ -128,4 +128,7 @@ public class User implements UserDetails {
         return item.isAvailableForDirectLoan() && !hasActiveLoanForItem(item);
     }
 
+    public int getLoanLimit() {
+        return 2;
+    }
 }

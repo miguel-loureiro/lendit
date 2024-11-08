@@ -18,21 +18,52 @@ import java.util.Set;
 @Repository
 public interface ItemRequestRepository extends JpaRepository<ItemRequest, Integer> {
 
-    // Basic queries
-    boolean existsByUserAndItemAndStatusIn(User user, Item item, Set<ItemRequestStatus> statuses);
+    Optional<Integer> findMaxQueuePositionByItem(Item item);
 
-    // Find items with waiting requests
-    @Query("SELECT DISTINCT i FROM Item i JOIN i.requests r " +
-            "WHERE r.status = 'PENDING'")
-    List<Item> findItemsWithPendingRequests();
+    Optional<ItemRequest> findFirstByItemAndStatusOrderByQueuePositionAsc(Item item, ItemRequestStatus status);
 
-    // Custom query to find the maximum queue position for a specific item
-    @Query("SELECT COALESCE(MAX(ir.queuePosition), 0) FROM ItemRequest ir WHERE ir.item = :item")
-    Optional<Integer> findMaxPositionByItem(@Param("item") Item item);
+    List<ItemRequest> findByItemAndStatusOrderByQueuePositionAsc(Item item, ItemRequestStatus status);
 
-    // Custom query to find ItemRequests by status and request date before a specified date
-    List<ItemRequest> findByStatusAndRequestDateBefore(ItemRequestStatus status, LocalDateTime requestDate);
+    List<ItemRequest> findByUserOrderByRequestDateDesc(User user);
 
-    // Custom query to find an ItemRequest by user, item, and status
-    Optional<ItemRequest> findByUserAndItemAndStatus(User user, Item item, ItemRequestStatus status);
+    List<ItemRequest> findByItemOrderByQueuePositionAsc(Item item);
+
+    // Custom query methods
+
+    /**
+     * Finds the number of active (PENDING or FULFILLED) requests for the given user and item.
+     *
+     * @param user The user for which to find the active requests.
+     * @param item The item for which to find the active requests.
+     * @return The count of active requests for the given user and item.
+     */
+    int countByUserAndItemAndStatusIn(User user, Item item, List<ItemRequestStatus> statuses);
+
+    /**
+     * Finds the number of active (PENDING or FULFILLED) requests for the given item.
+     *
+     * @param item The item for which to find the active requests.
+     * @param statuses The request statuses to include in the count.
+     * @return The count of active requests for the given item.
+     */
+    int countByItemAndStatusIn(Item item, List<ItemRequestStatus> statuses);
+
+    /**
+     * Finds the active (PENDING or FULFILLED) requests for the given user and item.
+     *
+     * @param user The user for which to find the active requests.
+     * @param item The item for which to find the active requests.
+     * @return The list of active requests for the given user and item.
+     */
+    List<ItemRequest> findByUserAndItemAndStatusIn(User user, Item item, List<ItemRequestStatus> statuses);
+
+    /**
+     * Finds the active (PENDING or FULFILLED) requests for the given item.
+     *
+     * @param item The item for which to find the active requests.
+     * @param statuses The request statuses to include in the search.
+     * @return The list of active requests for the given item.
+     */
+    List<ItemRequest> findByItemAndStatusIn(Item item, List<ItemRequestStatus> statuses);
 }
+

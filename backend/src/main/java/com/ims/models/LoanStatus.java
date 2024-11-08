@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum LoanStatus {
     ACTIVE("Active loan in progress"),    // Initial state when loan is created
     EXTENDED("Loan period extended"),     // When loan is extended beyond original end date
-    TERMINATED("Loan terminated");        // When loan is returned and completed
+    RETURNED ("Item returned and loan terminated");        // When loan is returned and completed
 
     private final String description;
 
@@ -27,6 +27,6 @@ public enum LoanStatus {
     }
 
     public boolean isCompleted() {
-        return this == TERMINATED;
+        return this == RETURNED;
     }
 }

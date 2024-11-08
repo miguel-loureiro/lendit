@@ -22,26 +22,31 @@ CREATE TABLE users (
 CREATE TABLE items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     designation VARCHAR(255) NOT NULL UNIQUE,
+    brand VARCHAR(100),
+    description TEXT,
     barcode VARCHAR(13) NOT NULL UNIQUE,
-    brand VARCHAR(255) NOT NULL,
     category VARCHAR(50) NOT NULL,
     purchase_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     stock_quantity INT NOT NULL DEFAULT 0,
+    available_quantity INT NOT NULL,
+    available_for_direct_loan BOOLEAN NOT NULL DEFAULT FALSE,
     version BIGINT NOT NULL DEFAULT 0
 );
 
 -- Create the loans table
 CREATE TABLE loans (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
     item_id INT NOT NULL,
+    user_id INT NOT NULL,
+    requested_quantity INT NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     initial_end_date DATE NOT NULL,  -- New column to track initial end date
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     previous_extended_date DATE,
-    version BIGINT NOT NULL,
     return_date DATE,
+    extension_count INT NOT NULL,
+    version BIGINT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
     CONSTRAINT version_constraint_loans CHECK (version >= 0)  -- Unique constraint name
@@ -50,8 +55,9 @@ CREATE TABLE loans (
 -- Create the item_requests table
 CREATE TABLE item_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
     item_id INT NOT NULL,
+    user_id INT NOT NULL,
+    requested_quantity INT NOT NULL,
     request_date DATE NOT NULL,
     queue_position INT NOT NULL,
     status VARCHAR(50) NOT NULL,

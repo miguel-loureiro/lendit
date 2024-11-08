@@ -17,7 +17,7 @@ public class ItemResponseDto {
     private String designation;
     @Getter
     @Setter
-    private Category category;
+    private String category;
     @Getter
     @Setter
     private String barcode;
@@ -40,7 +40,7 @@ public class ItemResponseDto {
         this.stockQuantity = item.getAvailableQuantity();
     }
 
-    public ItemResponseDto(String designation, Category category, String barcode, String brand, BigDecimal purchasePrice, Integer stockQuantity) {
+    public ItemResponseDto(String designation, String category, String barcode, String brand, BigDecimal purchasePrice, Integer stockQuantity) {
         this.designation = designation;
         this.category = category;
         this.barcode = barcode;

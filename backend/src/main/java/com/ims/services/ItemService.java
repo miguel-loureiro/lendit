@@ -1,12 +1,15 @@
 package com.ims.services;
 
 import com.ims.models.Item;
+import com.ims.models.ItemRequest;
+import com.ims.models.ItemRequestStatus;
 import com.ims.models.dtos.ItemResponseDto;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.UpdateItemDto;
 import com.ims.models.dtos.response.ItemCreatedDto;
 import com.ims.models.dtos.response.ItemUpdatedDto;
 import com.ims.repository.ItemRepository;
+import com.ims.repository.ItemRequestRepository;
 import com.ims.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,7 @@ public class ItemService {
 
     @Autowired
     private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final UserRepository userRepository;
     private final UserService userService;
 
@@ -92,9 +98,10 @@ public class ItemService {
         ItemUpdatedDto responseDto = ItemUpdatedDto.builder()
                 .id(updatedItem.getId())
                 .designation(updatedItem.getDesignation())
-                .barcode(updatedItem.getBarcode())
-                .brand(updatedItem.getBrand())
+                .description(updatedItem.getDescription())
                 .category(updatedItem.getCategory())
+                .brand(updatedItem.getBrand())
+                .barcode(updatedItem.getBarcode())
                 .purchasePrice(updatedItem.getPurchasePrice())
                 .stockQuantity(updatedItem.getStockQuantity())
                 .version(updatedItem.getVersion())
@@ -107,53 +114,25 @@ public class ItemService {
     public ResponseEntity<Void> deleteItem(Integer id) {
         log.info("Attempting to delete item with ID: {}", id);
 
-        return itemRepository.findById(id)
-                .map(item -> {
-                    // Check if the item has any active loans
-                    if (!item.getActiveLoans().isEmpty()) {
-                        throw new IllegalStateException("Cannot delete item with active loans");
-                    }
+        Optional<Item> itemOptional = itemRepository.findById(id);
+        if (itemOptional.isPresent()) {
+            Item item = itemOptional.get();
 
-                    // Check if the item has any pending requests
-                    if (!item.getPendingRequests().isEmpty()) {
-                        throw new IllegalStateException("Cannot delete item with pending requests");
-                    }
+            // Check if the item has nay pending request
+            List<ItemRequest> pendingRequests = itemRequestRepository.findByItemAndStatusIn(item, List.of(ItemRequestStatus.PENDING));
+            if (!pendingRequests.isEmpty()) {
+                log.error("Cannot delete item with ID {} due to pending requests", id);
+                throw new IllegalStateException("Cannot delete item with pending requests");
+            }
+            // No pending requests, so delete the item
+            itemRepository.delete(item);
+            log.info("Successfully deleted item with ID: {}", id);
+            return ResponseEntity.noContent().<Void>build();
 
-                    itemRepository.delete(item);
-                    log.info("Successfully deleted item with ID: {}", id);
-                    return ResponseEntity.noContent().<Void>build();
-                })
-                .orElseThrow(() -> {
-                    log.error("Item not found with ID: {}", id);
-                    return new EntityNotFoundException("Item not found with id: " + id);
-                });
-    }
-
-    // Helper method to convert Item to ItemResponseDto
-    private ItemCreatedDto convertToDto(Item item) {
-        return ItemCreatedDto.builder()
-                .id(item.getId())
-                .designation(item.getDesignation())
-                .barcode(item.getBarcode())
-                .brand(item.getBrand())
-                .category(item.getCategory())
-                .purchasePrice(item.getPurchasePrice())
-                .stockQuantity(item.getStockQuantity())
-                .version(item.getVersion())
-                .build();
-    }
-
-    private static ItemUpdatedDto getItemUpdateResponseDto(Item updatedItem) {
-        return ItemUpdatedDto.builder()
-                .id(updatedItem.getId())
-                .designation(updatedItem.getDesignation())
-                .barcode(updatedItem.getBarcode())
-                .brand(updatedItem.getBrand())
-                .category(updatedItem.getCategory())
-                .purchasePrice(updatedItem.getPurchasePrice())
-                .stockQuantity(updatedItem.getStockQuantity())
-                .version(updatedItem.getVersion())
-                .build();
+        } else {
+            log.error("Item not found with ID: {}", id);
+            throw new EntityNotFoundException("Item not found with id: " + id);
+        }
     }
 
     private void checkExistingDesignationAndBarcode(UpdateItemDto updateDto, Item existingItem) {

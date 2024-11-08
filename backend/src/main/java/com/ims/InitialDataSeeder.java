@@ -54,6 +54,8 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         addSuperUser();
+        addManagerUser();
+        addClientUser();
         seedItems();
     }
 
@@ -62,6 +64,20 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
         String encodedPassword = passwordEncoder.encode("superpassword");
         //String encodedPassword = "superpassword";
         userRepository.save(new User("superuser", "publixoapagar@gmail.com", encodedPassword, Role.SUPER));
+    }
+
+    private void addManagerUser() {
+
+        String encodedPassword = passwordEncoder.encode("managerpassword");
+        //String encodedPassword = "superpassword";
+        userRepository.save(new User("manageruser", "msloureiro2022@gmail.com", encodedPassword, Role.MANAGER));
+    }
+
+    private void addClientUser() {
+
+        String encodedPassword = passwordEncoder.encode("clientpassword");
+        //String encodedPassword = "superpassword";
+        userRepository.save(new User("clientuser", "miguel.silvaloureiro@gmail.com", encodedPassword, Role.CLIENT));
     }
 
     private void seedItems() {
