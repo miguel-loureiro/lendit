@@ -204,7 +204,7 @@ public class ItemRequestService {
             throw new LoanCreationException("Failed to create loan", e);
         }
     }
-    
+
     private Integer getNextQueuePosition(Item item) {
         // Implementation depends on your queueing strategy
         return itemRequestRepository.findMaxQueuePositionForItem(item.getId())

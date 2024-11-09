@@ -27,7 +27,7 @@ public class ClientController {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
-    @PostMapping("/new_request")
+    @PostMapping("/request_item")
     public ResponseEntity<RequestedItemDto> createItemRequest(@RequestBody ItemRequestDto input) {
         return itemRequestService.createItemRequest(input);
     }

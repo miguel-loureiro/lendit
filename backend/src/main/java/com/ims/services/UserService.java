@@ -13,6 +13,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -90,25 +92,26 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(Integer id) {
+    public ResponseEntity<Void> deleteUser (Integer id) {
         log.info("Attempting to delete user with ID: {}", id);
 
         validateUserDeletionPermissions(id);
 
         try {
             if (!userRepository.existsById(id)) {
-                throw new EntityNotFoundException("User not found with ID: " + id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
             userRepository.deleteById(id);
             log.info("Successfully deleted user with ID: {}", id);
+            return ResponseEntity.noContent().build(); // 204 No Content
 
         } catch (DataIntegrityViolationException e) {
             log.error("Database constraint violation while deleting user", e);
-            throw new IllegalStateException("Could not delete user due to existing dependencies", e);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409 Conflict
         } catch (Exception e) {
             log.error("Error deleting user with ID: {}", id, e);
-            throw new RuntimeException("Failed to delete user", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500 Internal Server Error
         }
     }
 
