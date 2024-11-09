@@ -5,6 +5,7 @@ import com.ims.models.ItemRequest;
 import com.ims.models.User;
 import com.ims.models.dtos.request.CreateItemDto;
 import com.ims.models.dtos.request.ItemRequestDto;
+import com.ims.models.dtos.response.RequestedItemDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.UserRepository;
 import com.ims.services.ItemRequestService;
@@ -27,12 +28,7 @@ public class ClientController {
     private final ItemRepository itemRepository;
 
     @PostMapping("/new_request")
-    public ResponseEntity<ItemRequest> createItemRequest(@RequestBody ItemRequestDto input) {
-        ItemRequest itemRequest = itemRequestService.createItemRequest(input);
-        if (itemRequest != null) {
-            return ResponseEntity.ok(itemRequest);
-        } else {
-            return ResponseEntity.noContent().build();
-        }
+    public ResponseEntity<RequestedItemDto> createItemRequest(@RequestBody ItemRequestDto input) {
+        return itemRequestService.createItemRequest(input);
     }
 }

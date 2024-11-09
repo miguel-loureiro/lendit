@@ -26,7 +26,7 @@ public class CreateItemDto {
     private String brand;
 
     @NotNull(message = "Category is required")
-    private Category category;
+    private String category;
 
     @DecimalMin(value = "0.01", message = "Purchase price must be greater than 0")
     private BigDecimal purchasePrice;

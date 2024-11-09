@@ -36,14 +36,9 @@ public class LoanService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
 
-        // Check if the requested quantity is available
-        if (item.isAvailableForDirectLoan(requestedQuantity)) {
             Loan loan = new Loan(user, item, requestedQuantity, startDate, endDate);
             item.addActiveLoan(loan);
             return loanRepository.save(loan);
-        } else {
-            throw new IllegalArgumentException("Requested quantity is not available for the item.");
-        }
     }
 
     public LoanUpdatedDto terminateLoan(Integer loanId) {

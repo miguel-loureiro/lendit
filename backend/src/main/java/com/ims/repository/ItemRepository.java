@@ -27,6 +27,6 @@ public interface ItemRepository extends JpaRepository<Item, Integer> {
     @Query("SELECT i FROM Item i LEFT JOIN FETCH i.activeLoans WHERE i.barcode = :barcode")
     Optional<Item> findByBarcodeWithLoans(@Param("barcode") String barcode);
 
-    @Query("SELECT i.id FROM Item i WHERE i.designation = :designation OR i.barcode = :barcode")
+    @Query("SELECT i FROM Item i WHERE i.designation = :designation OR i.barcode = :barcode")
     Optional<Item> findByDesignationOrBarcode(@Param("designation") String designation, @Param("barcode") String barcode);
 }

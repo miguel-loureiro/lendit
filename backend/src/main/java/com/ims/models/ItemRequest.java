@@ -1,6 +1,8 @@
 package com.ims.models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 @Table(name = "item_requests")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 public class ItemRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,5 +49,8 @@ public class ItemRequest {
     public ItemRequest() {
         this.requestDate = LocalDate.from(LocalDateTime.now());
         this.status = ItemRequestStatus.PENDING;
+    }
+
+    public ItemRequest(User user, String designation, String barcode, int requestedQuantity) {
     }
 }

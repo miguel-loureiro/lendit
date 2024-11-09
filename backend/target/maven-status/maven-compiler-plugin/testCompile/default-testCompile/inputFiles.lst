@@ -1,9 +1,0 @@
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/ImsApplicationTests.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/models/UserTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/security/CustomUserDetailsTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/security/JwtServiceTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/security/UserSecurityTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/services/AuthenticationServiceTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/services/CustomUserDetailsServiceTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/services/ItemServiceTest.java
-/Users/miguelloureiro/repos/miguel-loureiro/lendit/backend/src/test/java/com/ims/services/UserServiceTest.java

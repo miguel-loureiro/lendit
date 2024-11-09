@@ -28,7 +28,7 @@ public class Item {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal purchasePrice;
     @Column(nullable = false)
-    private Integer stockQuantity;
+    private Integer totalQuantity;
     @Column(nullable = false)
     private Integer availableQuantity;
     @Column(nullable = false)
@@ -39,21 +39,27 @@ public class Item {
     private Long version;
 
     public Item() {
-        this.availableQuantity = this.stockQuantity;
+        this.availableQuantity = this.totalQuantity;
         this.availableForDirectLoan = true;
     }
 
-    public Item(String designation, String barcode, String brand, Category category, BigDecimal purchasePrice, int stockQuantity) {
+    public Item(String designation, String barcode, String brand, String category, BigDecimal purchasePrice, int totalQuantity) {
+        this.designation = designation;
+        this.barcode = barcode;
+        this.brand = brand;
+        this.category = category;
+        this.purchasePrice = purchasePrice;
+        this.totalQuantity = totalQuantity;
+        this.availableQuantity = totalQuantity;
+        this.availableForDirectLoan = true;
     }
 
     public void addActiveLoan(Loan loan) {
         activeLoans.add(loan);
-        availableQuantity -= loan.getRequestedQuantity();
     }
 
     public void removeActiveLoan(Loan loan) {
         activeLoans.remove(loan);
-        availableQuantity += loan.getRequestedQuantity();
     }
 
     public boolean isAvailableForDirectLoan(Integer requestedQuantity) {

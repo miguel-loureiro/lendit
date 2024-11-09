@@ -27,7 +27,7 @@ CREATE TABLE items (
     barcode VARCHAR(13) NOT NULL UNIQUE,
     category VARCHAR(50) NOT NULL,
     purchase_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    stock_quantity INT NOT NULL DEFAULT 0,
+    total_quantity INT NOT NULL DEFAULT 0,
     available_quantity INT NOT NULL,
     available_for_direct_loan BOOLEAN NOT NULL DEFAULT FALSE,
     version BIGINT NOT NULL DEFAULT 0

@@ -89,7 +89,7 @@ public class ItemService {
         existingItem.setBrand(updateDto.getBrand());
         existingItem.setCategory(updateDto.getCategory());
         existingItem.setPurchasePrice(updateDto.getPurchasePrice());
-        existingItem.setStockQuantity(updateDto.getStockQuantity());
+        existingItem.setTotalQuantity(updateDto.getStockQuantity());
 
         // Save the updated item (JPA will handle the version check here)
         Item updatedItem = itemRepository.save(existingItem);
@@ -103,7 +103,7 @@ public class ItemService {
                 .brand(updatedItem.getBrand())
                 .barcode(updatedItem.getBarcode())
                 .purchasePrice(updatedItem.getPurchasePrice())
-                .stockQuantity(updatedItem.getStockQuantity())
+                .stockQuantity(updatedItem.getTotalQuantity())
                 .version(updatedItem.getVersion())
                 .build();
 
