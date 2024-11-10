@@ -28,109 +28,99 @@ public interface ItemRequestRepository extends JpaRepository<ItemRequest, Intege
     Optional<Integer> findMaxQueuePositionForItem(@Param("itemId") Integer itemId);
 
     /**
-     * Finds all pending requests for a given item
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status = 'PENDING' " +
-            "ORDER BY ir.queuePosition ASC")
-    List<ItemRequest> findPendingRequestsForItem(@Param("itemId") Integer itemId);
-
-    /**
-     * Finds all active requests for a given user
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.user.id = :userId " +
-            "AND ir.status IN ('PENDING', 'FULFILLED') " +
-            "ORDER BY ir.requestDate DESC")
-    List<ItemRequest> findActiveRequestsByUser(@Param("userId") Integer userId);
-
-    /**
-     * Finds all requests that can potentially be fulfilled based on available quantity
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status = 'PENDING' " +
-            "AND ir.requestedQuantity <= :availableQuantity " +
-            "ORDER BY ir.queuePosition ASC")
-    List<ItemRequest> findFulfillableRequests(
-            @Param("itemId") Integer itemId,
-            @Param("availableQuantity") Integer availableQuantity);
-
-    /**
-     * Finds overlapping requests for the same item in a date range
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status = 'FULFILLED' " +
-            "AND ((ir.requestDate BETWEEN :startDate AND :endDate) " +
-            "OR (ir.returnDate BETWEEN :startDate AND :endDate) " +
-            "OR (:startDate BETWEEN ir.requestDate AND ir.returnDate))")
-    List<ItemRequest> findOverlappingRequests(
-            @Param("itemId") Integer itemId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
-
-    /**
-     * Updates the queue positions for all pending requests after a specific position
-     */
-    @Modifying
-    @Query("UPDATE ItemRequest ir " +
-            "SET ir.queuePosition = ir.queuePosition - 1 " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status = 'PENDING' " +
-            "AND ir.queuePosition > :position")
-    void reorderQueuePositionsAfter(
-            @Param("itemId") Integer itemId,
-            @Param("position") Integer position);
-
-    /**
-     * Finds requests that are overdue (past return date)
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.status = 'FULFILLED' " +
-            "AND ir.returnDate < :date")
-    List<ItemRequest> findOverdueRequests(@Param("date") LocalDate date);
-
-    /**
-     * Counts active requests for an item
-     */
-    @Query("SELECT COUNT(ir) FROM ItemRequest ir " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status IN ('PENDING', 'FULFILLED')")
-    long countActiveRequestsForItem(@Param("itemId") Integer itemId);
-
-    /**
-     * Finds requests that were fulfilled within a date range
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.status = 'FULFILLED' " +
-            "AND ir.requestDate BETWEEN :startDate AND :endDate " +
-            "ORDER BY ir.requestDate DESC")
-    List<ItemRequest> findFulfilledRequestsInDateRange(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
-
-    /**
-     * Finds the next pending request for an item that can be fulfilled
-     */
-    @Query("SELECT ir FROM ItemRequest ir " +
-            "WHERE ir.item.id = :itemId " +
-            "AND ir.status = 'PENDING' " +
-            "AND ir.requestedQuantity <= :availableQuantity " +
-            "ORDER BY ir.queuePosition ASC " +
-            "LIMIT 1")
-    Optional<ItemRequest> findNextFulfillableRequest(
-            @Param("itemId") Integer itemId,
-            @Param("availableQuantity") Integer availableQuantity);
-
-    /**
      * Finds requests that need to be processed for auto-return
      */
     @Query("SELECT ir FROM ItemRequest ir " +
             "WHERE ir.status = 'FULFILLED' " +
             "AND ir.returnDate = :date")
     List<ItemRequest> findRequestsDueForReturn(@Param("date") LocalDate date);
+
+    /**
+     * Finds pending requests for a specific item, ordered by queue position.
+     * Used when processing the request queue after item returns.
+     *
+     * @param item The item being requested
+     * @param status The status of requests to find (typically PENDING)
+     * @return List of requests ordered by queue position
+     */
+    List<ItemRequest> findByItemAndStatusOrderByQueuePosition(Item item, ItemRequestStatus status);
+
+    /**
+     * Finds the highest queue position for a specific item.
+     * Used when assigning queue positions to new requests.
+     *
+     * @param itemId The ID of the item
+     * @return Optional containing the highest queue position if any requests exist
+     */
+    @Query("SELECT MAX(r.queuePosition) FROM ItemRequest r WHERE r.item.id = :itemId")
+    Optional<Integer> findMaxQueuePositionForItem(@Param("itemId") int itemId);
+
+    /**
+     * Reorders queue positions after a request is fulfilled or canceled.
+     * Decrements queue positions for all requests after the given position.
+     *
+     * @param itemId The ID of the item
+     * @param currentPosition Position from which to reorder
+     * @return Number of updated records
+     */
+    @Modifying
+    @Query("UPDATE ItemRequest r SET r.queuePosition = r.queuePosition - 1 " +
+            "WHERE r.item.id = :itemId AND r.queuePosition > :currentPosition " +
+            "AND r.status = 'PENDING'")
+    int reorderQueuePositionsAfter(
+            @Param("itemId") int itemId,
+            @Param("currentPosition") int currentPosition
+    );
+
+    /**
+     * Gets all pending requests that could potentially be fulfilled based on quantity.
+     * Used for batch processing of requests when items become available.
+     *
+     * @param itemId The ID of the item
+     * @param availableQuantity The available quantity of the item
+     * @param status The status to filter by (typically PENDING)
+     * @return List of requests that could be fulfilled
+     */
+    @Query("SELECT r FROM ItemRequest r " +
+            "WHERE r.item.id = :itemId " +
+            "AND r.requestedQuantity <= :availableQuantity " +
+            "AND r.status = :status " +
+            "ORDER BY r.queuePosition")
+    List<ItemRequest> findFulfillableRequests(
+            @Param("itemId") Long itemId,
+            @Param("availableQuantity") int availableQuantity,
+            @Param("status") ItemRequestStatus status
+    );
+
+    /**
+     * Counts pending requests for an item.
+     * Used for inventory management and reporting.
+     *
+     * @param itemId The ID of the item
+     * @param status The status to count (typically PENDING)
+     * @return Count of pending requests
+     */
+    @Query("SELECT COUNT(r) FROM ItemRequest r " +
+            "WHERE r.item.id = :itemId AND r.status = :status")
+    long countRequestsByItemAndStatus(
+            @Param("itemId") Long itemId,
+            @Param("status") ItemRequestStatus status
+    );
+
+    /**
+     * Gets total quantity requested across all pending requests for an item.
+     * Used for inventory planning.
+     *
+     * @param itemId The ID of the item
+     * @param status The status to sum (typically PENDING)
+     * @return Sum of requested quantities
+     */
+    @Query("SELECT COALESCE(SUM(r.requestedQuantity), 0) FROM ItemRequest r " +
+            "WHERE r.item.id = :itemId AND r.status = :status")
+    int sumRequestedQuantityByItemAndStatus(
+            @Param("itemId") Long itemId,
+            @Param("status") ItemRequestStatus status
+    );
 
     List<ItemRequest> findByItemAndStatusIn(Item item, List<ItemRequestStatus> statuses);
 }

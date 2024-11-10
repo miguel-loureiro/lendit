@@ -1,34 +1,51 @@
 package com.ims.services;
 
+import com.ims.exceptions.InvalidLoanStateException;
+import com.ims.exceptions.InvalidQuantityException;
+import com.ims.exceptions.LoanNotFoundException;
+import com.ims.exceptions.ServiceException;
 import com.ims.models.*;
-import com.ims.models.dtos.request.CreateLoanDto;
-import com.ims.models.dtos.request.ExtendLoanDto;
-import com.ims.models.dtos.request.TerminateLoanDto;
-import com.ims.models.dtos.response.LoanCreatedDto;
 import com.ims.models.dtos.response.LoanUpdatedDto;
 import com.ims.repository.ItemRepository;
-import com.ims.repository.ItemRequestRepository;
 import com.ims.repository.LoanRepository;
 import com.ims.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Optional;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class LoanService {
     private final LoanRepository loanRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+
+
+    /**
+     * Finds an active loan for a specific user and item.
+     * A loan is considered active if it has not been returned and has not expired.
+     *
+     * @param userId The ID of the user who borrowed the item
+     * @param itemId The ID of the borrowed item
+     * @return Optional containing the active loan if found, empty otherwise
+     */
+    public Optional<Loan> findActiveLoan(Integer userId, Integer itemId) {
+        if (userId == null || itemId == null) {
+            throw new IllegalArgumentException("User ID and Item ID must not be null");
+        }
+
+        return loanRepository.findByUserIdAndItemIdAndReturnDateIsNullAndEndDateGreaterThanEqual(
+                userId,
+                itemId,
+                LocalDate.now()
+        );
+    }
 
     public Loan createLoan(Integer userId, Integer itemId, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
         User user = userRepository.findById(userId)
@@ -41,18 +58,38 @@ public class LoanService {
             return loanRepository.save(loan);
     }
 
-    public LoanUpdatedDto terminateLoan(Integer loanId) {
+    /**
+     * Closes a loan by setting its return date to the current date.
+     * Validates the loan exists and is active before closing.
+     *
+     * @param loanId The ID of the loan to close
+     * @return
+     * @throws LoanNotFoundException     if the loan doesn't exist
+     * @throws InvalidLoanStateException if the loan is already closed
+     */
+    @Transactional
+    public LoanUpdatedDto endLoan(Integer loanId) {
+        if (loanId == null) {
+            throw new IllegalArgumentException("Loan ID must not be null");
+        }
+
         Loan loan = loanRepository.findById(loanId)
-                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-        Item item = loan.getItem();
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found with ID: " + loanId));
 
-        // Update the item's available quantity
-        item.removeActiveLoan(loan);
+        if (loan.getReturnDate() != null) {
+            throw new InvalidLoanStateException("Loan is already closed");
+        }
 
-        // Update the loan status and return date
-        loan.setStatus(LoanStatus.RETURNED);
         loan.setReturnDate(LocalDate.now());
-        loanRepository.save(loan);
+        loan.setStatus(LoanStatus.RETURNED);
+
+        try {
+            loanRepository.save(loan);
+            log.debug("Successfully closed loan with ID: {}", loanId);
+        } catch (Exception e) {
+            log.error("Failed to close loan with ID: {}", loanId, e);
+            throw new ServiceException("Failed to close loan", e);
+        }
         return createLoanUpdatedDto(loan);
     }
 
@@ -66,6 +103,55 @@ public class LoanService {
         loan.setExtensionCount(loan.getExtensionCount() + 1);
         loanRepository.save(loan);
         return createLoanUpdatedDto(loan);
+    }
+
+    /**
+     * Updates the quantity of items in an active loan.
+     * Validates the loan exists, is active, and the new quantity is valid.
+     *
+     * @param loanId The ID of the loan to update
+     * @param newQuantity The new quantity for the loan
+     * @throws LoanNotFoundException if the loan doesn't exist
+     * @throws InvalidLoanStateException if the loan is already closed
+     * @throws InvalidQuantityException if the new quantity is invalid
+     */
+    @Transactional
+    public void updateLoanQuantity(Integer loanId, int newQuantity) {
+        if (loanId == null) {
+            throw new IllegalArgumentException("Loan ID must not be null");
+        }
+
+        if (newQuantity < 0) {
+            throw new InvalidQuantityException("New quantity cannot be negative");
+        }
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found with ID: " + loanId));
+
+        if (loan.getReturnDate() != null) {
+            throw new InvalidLoanStateException("Cannot update quantity of a closed loan");
+        }
+
+        if (newQuantity == 0) {
+            endLoan(loanId);
+            return;
+        }
+
+        if (newQuantity > loan.getRequestedQuantity()) {
+            throw new InvalidQuantityException(
+                    String.format("New quantity (%d) cannot be greater than original quantity (%d)",
+                            newQuantity, loan.getRequestedQuantity()));
+        }
+
+        loan.setRequestedQuantity(newQuantity);
+
+        try {
+            loanRepository.save(loan);
+            log.debug("Successfully updated quantity for loan ID: {} to {}", loanId, newQuantity);
+        } catch (Exception e) {
+            log.error("Failed to update quantity for loan ID: {}", loanId, e);
+            throw new ServiceException("Failed to update loan quantity", e);
+        }
     }
 
     private LoanUpdatedDto createLoanUpdatedDto(Loan loan) {

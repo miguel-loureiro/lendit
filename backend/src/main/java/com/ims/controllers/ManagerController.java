@@ -6,8 +6,6 @@ import com.ims.models.dtos.response.*;
 import com.ims.services.ItemService;
 import com.ims.services.LoanService;
 import com.ims.services.UserService;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,8 +50,8 @@ public class ManagerController {
     }
 
     @PutMapping("loans/end/{id}")
-    public ResponseEntity<LoanUpdatedDto> terminateLoan(@PathVariable Integer id) {
-        LoanUpdatedDto loanUpdatedDto = loanService.terminateLoan(id);
+    public ResponseEntity<LoanUpdatedDto> endLoan(@PathVariable Integer id) {
+        LoanUpdatedDto loanUpdatedDto = loanService.endLoan(id);
         return ResponseEntity.ok(loanUpdatedDto);
     }
 

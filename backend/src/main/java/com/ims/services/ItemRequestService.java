@@ -1,17 +1,15 @@
 package com.ims.services;
 
 import com.ims.exceptions.*;
-import com.ims.models.Item;
-import com.ims.models.ItemRequest;
-import com.ims.models.ItemRequestStatus;
-import com.ims.models.User;
+import com.ims.models.*;
 import com.ims.models.dtos.request.ItemRequestDto;
+import com.ims.models.dtos.request.ItemReturnDto;
 import com.ims.models.dtos.response.RequestedItemDto;
+import com.ims.models.dtos.response.ReturnedItemDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.ItemRequestRepository;
 import com.ims.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -74,6 +71,100 @@ public class ItemRequestService {
         throw new ServiceException("Unexpected exit from retry loop");
     }
 
+    public ResponseEntity<ReturnedItemDto> returnItem(ItemReturnDto input) {
+        User user = findAndValidateUser(input.getUsername());
+        Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())
+                .orElseThrow(() -> new ItemNotFoundException("Item not found"));
+
+        validateReturnQuantity(input.getReturnQuantity());
+
+        int attempts = 0;
+        while (attempts < MAX_RETRIES) {
+            try {
+                return attemptReturnItem(input, user, item);
+            } catch (ObjectOptimisticLockingFailureException e) {
+                attempts++;
+                if (attempts >= MAX_RETRIES) {
+                    throw new ConcurrentModificationException(
+                            "Failed to process item return after " + MAX_RETRIES + " attempts due to concurrent modifications");
+                }
+                try {
+                    Thread.sleep(INITIAL_BACKOFF_MS * (long) Math.pow(2, attempts - 1));
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new ServiceException("Return process interrupted while waiting to retry", ie);
+                }
+                log.warn("Optimistic lock failure during return, attempt {}/{}", attempts, MAX_RETRIES);
+            }
+        }
+        throw new ServiceException("Unexpected exit from return retry loop");
+    }
+
+    private ResponseEntity<ReturnedItemDto> attemptReturnItem(ItemReturnDto input, User user, Item item) {
+        // Verify active loan exists for this user and item
+        Loan activeLoan = loanService.findActiveLoan(user.getId(), item.getId())
+                .orElseThrow(() -> new LoanNotFoundException("No active loan found for this item and user"));
+
+        // Validate return quantity against loan quantity
+        if (input.getReturnQuantity() > activeLoan.getRequestedQuantity()) {
+            throw new InvalidQuantityException(
+                    String.format("Return quantity (%d) exceeds borrowed quantity (%d)",
+                            input.getReturnQuantity(), activeLoan.getRequestedQuantity()));
+        }
+
+        // Update item's available quantity
+        int newAvailableQuantity = item.getAvailableQuantity() + input.getReturnQuantity();
+        if (newAvailableQuantity > item.getTotalQuantity()) {
+            throw new InvalidQuantityException("Return would exceed total item quantity");
+        }
+        item.setAvailableQuantity(newAvailableQuantity);
+        itemRepository.save(item);
+        log.debug("Updated available quantity for item: {} - New Available: {}", item.getId(), newAvailableQuantity);
+
+        // Close loan or update quantity
+        if (input.getReturnQuantity() == activeLoan.getRequestedQuantity()) {
+            loanService.endLoan(activeLoan.getId());
+        } else {
+            loanService.updateLoanQuantity(activeLoan.getId(),
+                    activeLoan.getRequestedQuantity() - input.getReturnQuantity());
+        }
+
+        // Check for pending requests that can now be fulfilled
+        processPendingRequests(item);
+
+        return ResponseEntity.ok(ReturnedItemDto.builder()
+                .username(user.getUsername())
+                .designation(item.getDesignation())
+                .barcode(item.getBarcode())
+                .returnedQuantity(input.getReturnQuantity())
+                .remainingLoanQuantity(activeLoan.getRequestedQuantity() - input.getReturnQuantity())
+                .build());
+    }
+
+    private void processPendingRequests(Item item) {
+        List<ItemRequest> pendingRequests = itemRequestRepository
+                .findByItemAndStatusOrderByQueuePosition(item, ItemRequestStatus.PENDING);
+
+        for (ItemRequest request : pendingRequests) {
+            if (canFulfillRequest(item, request.getRequestedQuantity())) {
+                try {
+                    fulfillRequest(request);
+                } catch (Exception e) {
+                    log.error("Failed to fulfill pending request {} after item return", request.getId(), e);
+                    // Continue processing other requests even if one fails
+                }
+            } else {
+                break; // Stop if we can't fulfill the next request
+            }
+        }
+    }
+
+    private void validateReturnQuantity(int returnQuantity) {
+        if (returnQuantity <= 0) {
+            throw new InvalidQuantityException("Return quantity must be greater than 0");
+        }
+    }
+
     private ResponseEntity<RequestedItemDto> attemptCreateItemRequest(ItemRequestDto input, User user) {
         Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())
                 .orElseThrow(() -> new ItemNotFoundException("Item not found"));
@@ -98,11 +189,11 @@ public class ItemRequestService {
     }
 
     @Transactional
-    private ItemRequest fulfillRequest(ItemRequest itemRequest) {
+    private void fulfillRequest(ItemRequest itemRequest) {
         // Check if the item request is already fulfilled
         if (itemRequest.getStatus() == ItemRequestStatus.FULFILLED) {
             log.debug("Item request with ID {} is already fulfilled, skipping.", itemRequest.getId());
-            return itemRequest;
+            return;
         }
 
         Item item = itemRequest.getItem();
@@ -124,7 +215,7 @@ public class ItemRequestService {
         // Update request status to fulfilled
         itemRequest.setStatus(ItemRequestStatus.FULFILLED);
         itemRequest.setReturnDate(returnDate);
-        return itemRequestRepository.save(itemRequest);
+        itemRequestRepository.save(itemRequest);
     }
 
     private ItemRequest createAndSaveInitialRequest(ItemRequestDto input, User user, Item item) {
