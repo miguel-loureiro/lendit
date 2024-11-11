@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -45,9 +46,12 @@ public class ItemRequestService {
     }
 
     public ResponseEntity<RequestedItemDto> createItemRequest(ItemRequestDto input) {
-        validateRequestQuantity(input.getRequestedQuantity());
 
-        User user = findAndValidateUser(input.getUsername());
+        String username = getCurrentUsernameString();
+
+        validateRequestQuantity(input.getQuantity());
+
+        User user = findAndValidateUser(username);
 
         int attempts = 0;
         while (attempts < MAX_RETRIES) {
@@ -72,7 +76,10 @@ public class ItemRequestService {
     }
 
     public ResponseEntity<ReturnedItemDto> returnItem(ItemReturnDto input) {
-        User user = findAndValidateUser(input.getUsername());
+
+        String username = getCurrentUsernameString();
+
+        User user = findAndValidateUser(username);
         Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())
                 .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
@@ -100,16 +107,23 @@ public class ItemRequestService {
         throw new ServiceException("Unexpected exit from return retry loop");
     }
 
+    private static String getCurrentUsernameString() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        return username;
+    }
+
     private ResponseEntity<ReturnedItemDto> attemptReturnItem(ItemReturnDto input, User user, Item item) {
         // Verify active loan exists for this user and item
         Loan activeLoan = loanService.findActiveLoan(user.getId(), item.getId())
                 .orElseThrow(() -> new LoanNotFoundException("No active loan found for this item and user"));
 
         // Validate return quantity against loan quantity
-        if (input.getReturnQuantity() > activeLoan.getRequestedQuantity()) {
+        if (input.getReturnQuantity() > activeLoan.getQuantity()) {
             throw new InvalidQuantityException(
                     String.format("Return quantity (%d) exceeds borrowed quantity (%d)",
-                            input.getReturnQuantity(), activeLoan.getRequestedQuantity()));
+                            input.getReturnQuantity(), activeLoan.getQuantity()));
         }
 
         // Update item's available quantity
@@ -122,11 +136,11 @@ public class ItemRequestService {
         log.debug("Updated available quantity for item: {} - New Available: {}", item.getId(), newAvailableQuantity);
 
         // Close loan or update quantity
-        if (input.getReturnQuantity() == activeLoan.getRequestedQuantity()) {
+        if (input.getReturnQuantity() == activeLoan.getQuantity()) {
             loanService.endLoan(activeLoan.getId());
         } else {
             loanService.updateLoanQuantity(activeLoan.getId(),
-                    activeLoan.getRequestedQuantity() - input.getReturnQuantity());
+                    activeLoan.getQuantity() - input.getReturnQuantity());
         }
 
         // Check for pending requests that can now be fulfilled
@@ -137,7 +151,7 @@ public class ItemRequestService {
                 .designation(item.getDesignation())
                 .barcode(item.getBarcode())
                 .returnedQuantity(input.getReturnQuantity())
-                .remainingLoanQuantity(activeLoan.getRequestedQuantity() - input.getReturnQuantity())
+                .remainingLoanQuantity(activeLoan.getQuantity() - input.getReturnQuantity())
                 .build());
     }
 
@@ -170,13 +184,13 @@ public class ItemRequestService {
                 .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
         validateItemQuantities(item);
-        validateAvailableQuantity(input.getRequestedQuantity(), item);
+        validateAvailableQuantity(input.getQuantity(), item);
 
         // Create initial request without altering available quantity here
         ItemRequest itemRequest = createAndSaveInitialRequest(input, user, item);
 
         // Ensure fulfillRequest is only called if the request is pending
-        if (canFulfillRequest(item, input.getRequestedQuantity()) && itemRequest.getStatus() == ItemRequestStatus.PENDING) {
+        if (canFulfillRequest(item, input.getQuantity()) && itemRequest.getStatus() == ItemRequestStatus.PENDING) {
             fulfillRequest(itemRequest); // this will handle the quantity reduction
         }
 
@@ -184,7 +198,7 @@ public class ItemRequestService {
                 .username(user.getUsername())
                 .designation(item.getDesignation())
                 .barcode(item.getBarcode())
-                .requestedQuantity(input.getRequestedQuantity())
+                .requestedQuantity(input.getQuantity())
                 .build());
     }
 
@@ -223,7 +237,7 @@ public class ItemRequestService {
         ItemRequest itemRequest = ItemRequest.builder()
                 .user(user)
                 .item(item)
-                .requestedQuantity(input.getRequestedQuantity())
+                .requestedQuantity(input.getQuantity())
                 .requestDate(now)
                 .returnDate(now.plusDays(30))
                 .queuePosition(getNextQueuePosition(item))
@@ -253,9 +267,9 @@ public class ItemRequestService {
         }
     }
 
-    private User findAndValidateUser(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+    private User findAndValidateUser(String currentUsername) {
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UserNotFoundException("Currently authenticated user not found in database: " + currentUsername));
     }
 
     private void validateItemQuantities(Item item) {
@@ -297,7 +311,6 @@ public class ItemRequestService {
     }
 
     private Integer getNextQueuePosition(Item item) {
-        // Implementation depends on your queueing strategy
         return itemRequestRepository.findMaxQueuePositionForItem(item.getId())
                 .map(pos -> pos + 1)
                 .orElse(1);

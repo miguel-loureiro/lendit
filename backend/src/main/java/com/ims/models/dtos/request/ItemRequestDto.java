@@ -13,17 +13,11 @@ public class ItemRequestDto {
 
     @NotEmpty
     @NotNull
-    private String username;
-
-    @NotEmpty
-    @NotNull
     private String designation;
-
     @NotEmpty
     @NotNull
     private String barcode;
-
     @NotNull
     @NotEmpty
-    private Integer requestedQuantity;
+    private Integer quantity;
 }

@@ -40,15 +40,15 @@ public class Loan {
     @Column
     private Integer extensionCount = 0;
     @Column(nullable = false)
-    private Integer requestedQuantity;
+    private Integer quantity;
 
     // Constructors
     public Loan() {}
 
-    public Loan(User user, Item item, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
+    public Loan(User user, Item item, Integer quantity, LocalDate startDate, LocalDate endDate) {
         this.user = user;
         this.item = item;
-        this.requestedQuantity = requestedQuantity;
+        this.quantity = quantity;
         this.startDate = startDate;
         this.endDate = endDate;
         this.initialEndDate = endDate;  // Set original end date same as end date when creating
@@ -58,7 +58,7 @@ public class Loan {
     public Loan(User user, Item item, Integer requestedQuantity, LocalDate startDate, LocalDate endDate, LoanStatus status) {
         this.user = user;
         this.item = item;
-        this.requestedQuantity = requestedQuantity;
+        this.quantity = quantity;
         this.startDate = startDate;
         this.endDate = endDate;
         this.initialEndDate = endDate;  // Set original end date same as end date when creating

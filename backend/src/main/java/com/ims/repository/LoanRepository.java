@@ -43,5 +43,17 @@ public interface LoanRepository extends JpaRepository<Loan, Integer> {
             Integer itemId,
             LocalDate date
     );
+
+    /**
+     * Finds all loans for a user with ACTIVE and EXTENDED statuses.
+     *
+     * @param user The user whose loans to find
+     * @return List of loans that are either ACTIVE or EXTENDED
+     */
+    @Query("SELECT l FROM Loan l WHERE l.user = :user AND l.status IN :statuses")
+    List<Loan> findActiveAndExtendedLoansByUser (
+            @Param("user") User user,
+            @Param("statuses") List<LoanStatus> statuses
+    );
 }
 

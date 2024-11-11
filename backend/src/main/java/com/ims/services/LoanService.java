@@ -5,6 +5,7 @@ import com.ims.exceptions.InvalidQuantityException;
 import com.ims.exceptions.LoanNotFoundException;
 import com.ims.exceptions.ServiceException;
 import com.ims.models.*;
+import com.ims.models.dtos.response.LoanDetailDto;
 import com.ims.models.dtos.response.LoanUpdatedDto;
 import com.ims.repository.ItemRepository;
 import com.ims.repository.LoanRepository;
@@ -12,10 +13,13 @@ import com.ims.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -26,6 +30,24 @@ public class LoanService {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
+    /**
+     * Retrieves all active and extended loans for the current user.
+     *
+     * @return List of loans that are either active or extended
+     */
+    public List<LoanDetailDto> getActiveAndExtendedLoansForCurrentUser () {
+        String currentUsername = getCurrentUsernameString();
+
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User  not found"));
+
+        List<Loan> loans = loanRepository.findActiveAndExtendedLoansByUser (user, List.of(LoanStatus.ACTIVE, LoanStatus.EXTENDED));
+
+        // Map Loan entities to LoanDetailDto
+        return loans.stream()
+                .map(this::mapToLoanDetailDto)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Finds an active loan for a specific user and item.
@@ -137,13 +159,13 @@ public class LoanService {
             return;
         }
 
-        if (newQuantity > loan.getRequestedQuantity()) {
+        if (newQuantity > loan.getQuantity()) {
             throw new InvalidQuantityException(
                     String.format("New quantity (%d) cannot be greater than original quantity (%d)",
-                            newQuantity, loan.getRequestedQuantity()));
+                            newQuantity, loan.getQuantity()));
         }
 
-        loan.setRequestedQuantity(newQuantity);
+        loan.setQuantity(newQuantity);
 
         try {
             loanRepository.save(loan);
@@ -164,5 +186,28 @@ public class LoanService {
                 .status(loan.getStatus())
                 .returnDate(returnDate)
                 .build();
+    }
+
+    private static String getCurrentUsernameString() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        return username;
+    }
+
+    private LoanDetailDto mapToLoanDetailDto(Loan loan) {
+        LoanDetailDto dto = new LoanDetailDto();
+        dto.setId(loan.getId());
+        dto.setItemDesignation(loan.getItem().getDesignation());
+        dto.setItemBarcode(loan.getItem().getBarcode());
+        dto.setStartDate(loan.getStartDate());
+        dto.setEndDate(loan.getEndDate());
+        dto.setInitialEndDate(loan.getInitialEndDate());
+        dto.setStatus(loan.getStatus());
+        dto.setPreviousExtendedDate(loan.getPreviousExtendedDate());
+        dto.setReturnDate(loan.getReturnDate());
+        dto.setExtensionCount(loan.getExtensionCount());
+        dto.setQuantity(loan.getQuantity());
+        return dto;
     }
 }

@@ -43,6 +43,7 @@ public class ManagerController {
         return itemService.deleteItem(id);
     }
 
+    /*
     @PutMapping("loans/extend/{id}")
     public ResponseEntity<LoanUpdatedDto> extendLoan(@PathVariable Integer id, @RequestBody ExtendLoanDto input) {
         LoanUpdatedDto loanUpdatedDto = loanService.extendLoan(id, input.getNewEndDate());
@@ -54,7 +55,7 @@ public class ManagerController {
         LoanUpdatedDto loanUpdatedDto = loanService.endLoan(id);
         return ResponseEntity.ok(loanUpdatedDto);
     }
-
+*/
     @PostMapping("/clients/new")
     public ResponseEntity<UserCreatedDto> createClient(@RequestBody CreateUserDto createClientDto) {
         UserCreatedDto clientCreatedDto = userService.createUser(createClientDto);
