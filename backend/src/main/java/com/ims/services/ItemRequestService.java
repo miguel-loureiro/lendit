@@ -47,11 +47,11 @@ public class ItemRequestService {
 
     public ResponseEntity<RequestedItemDto> createItemRequest(ItemRequestDto input) {
 
-        String username = getCurrentUsernameString();
+        String userEmail = getCurrentUserEmail();
 
         validateRequestQuantity(input.getQuantity());
 
-        User user = findAndValidateUser(username);
+        User user = findAndValidateUser(userEmail);
 
         int attempts = 0;
         while (attempts < MAX_RETRIES) {
@@ -77,9 +77,9 @@ public class ItemRequestService {
 
     public ResponseEntity<ReturnedItemDto> returnItem(ItemReturnDto input) {
 
-        String username = getCurrentUsernameString();
+        String userEmail = getCurrentUserEmail();
 
-        User user = findAndValidateUser(username);
+        User user = findAndValidateUser(userEmail);
         Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())
                 .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
@@ -107,11 +107,11 @@ public class ItemRequestService {
         throw new ServiceException("Unexpected exit from return retry loop");
     }
 
-    private static String getCurrentUsernameString() {
-        String username = SecurityContextHolder.getContext()
+    private static String getCurrentUserEmail() {
+
+        return SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
-        return username;
     }
 
     private ResponseEntity<ReturnedItemDto> attemptReturnItem(ItemReturnDto input, User user, Item item) {
@@ -267,9 +267,9 @@ public class ItemRequestService {
         }
     }
 
-    private User findAndValidateUser(String currentUsername) {
-        return userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new UserNotFoundException("Currently authenticated user not found in database: " + currentUsername));
+    private User findAndValidateUser(String currentUserEmail) {
+        return userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new UserNotFoundException("Currently authenticated user not found XIXIXIXIXI in database: " + currentUserEmail));
     }
 
     private void validateItemQuantities(Item item) {

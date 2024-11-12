@@ -36,6 +36,7 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
         addSuperUser();
         addManagerUser();
         addClientUser();
+        addClientUser2();
         seedItems();
     }
 
@@ -72,7 +73,8 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
             String brand = brands[random.nextInt(brands.length)];
             String category = categories[random.nextInt(categories.length)];
             BigDecimal purchasePrice = generateRandomPrice(random);
-            int stockQuantity = 10 + random.nextInt(91);
+           // int stockQuantity = 10 + random.nextInt(91);
+            int stockQuantity = 10;
 
             Item item = new Item(designation, barcode, brand, category, purchasePrice, stockQuantity);
             items.add(item);
@@ -130,5 +132,10 @@ public class InitialDataSeeder implements ApplicationListener<ContextRefreshedEv
     private void addClientUser() {
         String encodedPassword = passwordEncoder.encode("clientpassword");
         userRepository.save(new User("clientuser", "miguel.silvaloureiro@gmail.com", encodedPassword, Role.CLIENT));
+    }
+
+    private void addClientUser2() {
+        String encodedPassword = passwordEncoder.encode("client2password");
+        userRepository.save(new User("client2user", "marta.manuel.ferreira@gmail.com", encodedPassword, Role.CLIENT));
     }
 }
