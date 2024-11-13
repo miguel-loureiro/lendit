@@ -55,5 +55,18 @@ public interface LoanRepository extends JpaRepository<Loan, Integer> {
             @Param("user") User user,
             @Param("statuses") List<LoanStatus> statuses
     );
+
+    /**
+     * Finds all active loans that are due for return on the specified date.
+     *
+     * @param returnDate The date for which to find loans due for return
+     * @param statuses List of loan statuses that are considered active
+     * @return List of loans that are active and due for return on the specified date
+     */
+    @Query("SELECT l FROM Loan l WHERE l.returnDate = :returnDate AND l.status IN :statuses")
+    List<Loan> findActiveLoansByReturnDate(
+            @Param("returnDate") LocalDate returnDate,
+            @Param("statuses") List<LoanStatus> statuses
+    );
 }
 

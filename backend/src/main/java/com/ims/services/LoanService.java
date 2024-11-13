@@ -69,6 +69,17 @@ public class LoanService {
         );
     }
 
+    /**
+     * Finds all active loans that are due for return on the specified date.
+     *
+     * @param returnDate The date for which to find loans due for return
+     * @param statuses List of loan statuses that are considered active
+     * @return List of loans that are active and due for return on the specified date
+     */
+    public List<Loan> findActiveLoansByReturnDate(LocalDate returnDate, List<LoanStatus> statuses) {
+        return loanRepository.findActiveLoansByReturnDate(returnDate, statuses);
+    }
+
     public Loan createLoan(Integer userId, Integer itemId, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
