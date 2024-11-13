@@ -58,16 +58,16 @@ public class ItemServiceTest {
         existingItem.setDesignation("Old Designation");
         existingItem.setBarcode("123456789");
         existingItem.setBrand("Old Brand");
-        existingItem.setCategory(Category.STORAGE_DEVICE);
+        existingItem.setCategory("Storage device");
         existingItem.setPurchasePrice(BigDecimal.valueOf(199.0));
-        existingItem.setStockQuantity(10);
+        existingItem.setTotalQuantity(10);
         existingItem.setVersion(1L);
 
         updateDto = UpdateItemDto.builder()
                 .designation("New Designation")
                 .barcode("987654321")
                 .brand("New Brand")
-                .category(Category.LAPTOP)
+                .category("Laptop")
                 .purchasePrice(BigDecimal.valueOf(356.83))
                 .stockQuantity(15)
                 .build();
@@ -76,16 +76,14 @@ public class ItemServiceTest {
     private Item createItemWithActiveLoan() {
         Item item = new Item();
         item.setId(1);
-        item.setLoans(createActiveLoans());
-        item.setRequests(new HashSet<>());
+        item.setActiveLoans(createActiveLoans());
         return item;
     }
 
     private Item createItemWithPendingRequests() {
         Item item = new Item();
         item.setId(1);
-        item.setLoans(new HashSet<>());
-        item.setRequests(createPendingRequests());
+        item.setActiveLoans(new HashSet<>());
         return item;
     }
 
@@ -108,8 +106,8 @@ public class ItemServiceTest {
     @Test
     public void getAllItems_ShouldReturnPagedItems() throws IOException {
         // Arrange
-        Item item1 = new Item("Item1", "1234567890123", "Brand1", Category.LAPTOP, BigDecimal.valueOf(100.00), 10);
-        Item item2 = new Item("Item2", "1234567890124", "Brand2", Category.PERIPHERAL, BigDecimal.valueOf(200.00), 20);
+        Item item1 = new Item("Item1", "1234567890123", "Brand1", "Laptop", BigDecimal.valueOf(100.00), 10);
+        Item item2 = new Item("Item2", "1234567890124", "Brand2", "Peripheral", BigDecimal.valueOf(200.00), 20);
         Page<Item> itemsPage = new PageImpl<>(Arrays.asList(item1, item2));
 
         when(itemRepository.findAll(any(Pageable.class))).thenReturn(itemsPage);
@@ -126,9 +124,9 @@ public class ItemServiceTest {
     @Test
     public void createItem_ShouldReturnCreatedItem_WhenItemIsValid() {
         // Arrange
-        CreateItemDto createItemDto = new CreateItemDto("Item1", "1234567890123", "Brand1", Category.STORAGE_DEVICE, BigDecimal.valueOf(100.00), 10);
+        CreateItemDto createItemDto = new CreateItemDto("Item1", "1234567890123", "Brand1", "Storage device", BigDecimal.valueOf(100.00), 10);
         Item itemToSave = createItemDto.toItem();
-        Item savedItem = new Item("Item1", "1234567890123", "Brand1", Category.DESKTOP, BigDecimal.valueOf(100.00), 10);
+        Item savedItem = new Item("Item1", "1234567890123", "Brand1", "Desktop", BigDecimal.valueOf(100.00), 10);
         savedItem.setId(1); // Assuming the ID is generated after saving
 
         when(itemRepository.findByDesignation(createItemDto.getDesignation())).thenReturn(Optional.empty());
@@ -147,7 +145,7 @@ public class ItemServiceTest {
     @Test
     public void createItem_ShouldThrowException_WhenDesignationExists() {
         // Arrange
-        CreateItemDto createItemDto = new CreateItemDto("Item1", "1234567890123", "Brand1", Category.PERIPHERAL, BigDecimal.valueOf(100.00), 10);
+        CreateItemDto createItemDto = new CreateItemDto("Item1", "1234567890123", "Brand1", "Peripheral", BigDecimal.valueOf(100.00), 10);
         when(itemRepository.findByDesignation(createItemDto.getDesignation())).thenReturn(Optional.of(new Item()));
 
         // Act & Assert
@@ -165,7 +163,7 @@ public class ItemServiceTest {
         createItemDto.setDesignation("Test Item");
         createItemDto.setBarcode("123456789012");
         createItemDto.setBrand("Test Brand");
-        createItemDto.setCategory(Category.DESKTOP);
+        createItemDto.setCategory("Desktop");
         createItemDto.setPurchasePrice(BigDecimal.TEN);
         createItemDto.setStockQuantity(10);
 

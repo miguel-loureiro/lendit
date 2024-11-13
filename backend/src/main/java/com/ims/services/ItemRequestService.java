@@ -30,6 +30,7 @@ public class ItemRequestService {
     private final ItemRepository itemRepository;
     private final ItemRequestRepository itemRequestRepository;
     private final LoanService loanService;
+    private final NotificationService notificationService;
 
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_BACKOFF_MS = 100;
@@ -38,11 +39,12 @@ public class ItemRequestService {
     public ItemRequestService(UserRepository userRepository,
                               ItemRepository itemRepository,
                               ItemRequestRepository itemRequestRepository,
-                              LoanService loanService) {
+                              LoanService loanService, NotificationService notificationService) {
         this.userRepository = userRepository;
         this.itemRepository = itemRepository;
         this.itemRequestRepository = itemRequestRepository;
         this.loanService = loanService;
+        this.notificationService = notificationService;
     }
 
     public ResponseEntity<RequestedItemDto> createItemRequest(ItemRequestDto input) {
@@ -146,6 +148,14 @@ public class ItemRequestService {
         // Check for pending requests that can now be fulfilled
         processPendingRequests(item);
 
+        // Send return confirmation
+        notificationService.sendItemReturnConfirmation(
+                user,
+                item,
+                input.getReturnQuantity(),
+                activeLoan.getQuantity() - input.getReturnQuantity()
+        );
+
         return ResponseEntity.ok(ReturnedItemDto.builder()
                 .username(user.getUsername())
                 .designation(item.getDesignation())
@@ -189,6 +199,9 @@ public class ItemRequestService {
         // Create initial request without altering available quantity here
         ItemRequest itemRequest = createAndSaveInitialRequest(input, user, item);
 
+        // Send confirmation email
+        notificationService.sendItemRequestConfirmation(user, item, input.getQuantity());
+
         // Ensure fulfillRequest is only called if the request is pending
         if (canFulfillRequest(item, input.getQuantity()) && itemRequest.getStatus() == ItemRequestStatus.PENDING) {
             fulfillRequest(itemRequest); // this will handle the quantity reduction
@@ -230,6 +243,14 @@ public class ItemRequestService {
         itemRequest.setStatus(ItemRequestStatus.FULFILLED);
         itemRequest.setReturnDate(returnDate);
         itemRequestRepository.save(itemRequest);
+
+        // Send fulfillment notification
+        notificationService.sendRequestFulfillmentNotification(
+                itemRequest.getUser(),
+                itemRequest.getItem(),
+                itemRequest.getRequestedQuantity(),
+                returnDate
+        );
     }
 
     private ItemRequest createAndSaveInitialRequest(ItemRequestDto input, User user, Item item) {

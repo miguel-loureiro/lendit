@@ -35,7 +35,7 @@ public class NotificationService {
             We will notify you once your request has been fulfilled.
             
             Best regards,
-            Library Team
+            Item Management System
             """,
                 user.getUsername(),
                 quantity,
@@ -70,7 +70,7 @@ public class NotificationService {
             Please remember to return the item(s) by the specified return date.
             
             Best regards,
-            Library Team
+            Item Management System
             """,
                 user.getUsername(),
                 quantity,
@@ -103,7 +103,7 @@ public class NotificationService {
             %s
             
             Best regards,
-            Library Team
+            Item Management System
             """,
                 user.getUsername(),
                 quantity,
