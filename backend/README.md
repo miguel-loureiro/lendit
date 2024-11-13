@@ -147,3 +147,50 @@ Handles three types of email notifications:
 - Request Confirmation: Sent when a user submits a new item request
 - Request Fulfillment: Sent when a request is fulfilled and a loan is created
 - Return Confirmation: Sent when a user returns items
+
+#### NotificationService 
+- to be asynchronous and simplify the reminder to only notify users 1 day before the due date.
+
+Key changes made:
+
+Added AsyncConfig:
+
+- Created a dedicated thread pool for notifications
+- Configured core pool size (2), max pool size (4), and queue capacity (100)
+- Uses meaningful thread name prefix for better monitoring
+
+Made notifications asynchronous:
+
+- Added @Async("notificationExecutor") to all notification methods
+- This means notifications won't block the main application flow
+- Each notification runs in its own thread
+
+Simplified reminder system:
+
+- only the 1-day reminder
+- Scheduled to run daily at 10:00 AM
+- Configurable timing through properties
+
+Added proper error handling and logging:
+
+Each async operation has its own try-catch block
+Detailed logging for success and failure cases
+Non-blocking error handling
+
+To use this service, add the following to your application.properties (optional, these are the default values):
+```
+# Reminder schedule (default is 9:00 AM daily)
+notification.schedule.reminders=0 0 9 * * ?
+
+# Async executor configuration (optional, can override defaults)
+notification.async.core-pool-size=2
+notification.async.max-pool-size=4
+notification.async.queue-capacity=100
+```
+
+### The async implementation provides several benefits:
+
+- Better performance - email sending doesn't block the main application
+- Improved scalability - multiple notifications can be processed simultaneously
+- Failure isolation - if a notification fails, it doesn't affect other operations
+- Configurable thread pool - can be tuned based on your needs
