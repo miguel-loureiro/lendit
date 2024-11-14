@@ -1,8 +1,11 @@
 package com.ims.services;
 
+import com.ims.models.Role;
 import com.ims.models.User;
 import com.ims.models.dtos.request.LoginUserDto;
+import com.ims.models.dtos.request.SignupUserDto;
 import com.ims.models.dtos.response.LoginResponse;
+import com.ims.models.dtos.response.UserSignedDto;
 import com.ims.repository.UserRepository;
 import com.ims.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +30,10 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(LoginUserDto loginRequest) {
-        log.info("Starting authentication process for email: {}", loginRequest.getEmail());
+        log.info("Starting authentication process for email: {}", loginRequest.getUsername());
         try {
             // First verify the user exists
-            User user = userRepository.findByEmail(loginRequest.getEmail())
+            User user = userRepository.findByEmail(loginRequest.getUsername())
                     .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
             log.info("User found in database: {}", user.getUsername());
@@ -44,7 +47,7 @@ public class AuthenticationService {
             // Perform the authentication
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
+                            loginRequest.getUsername(),
                             loginRequest.getPassword()
                     )
             );
@@ -64,11 +67,71 @@ public class AuthenticationService {
                     .build();
 
         } catch (BadCredentialsException e) {
-            log.error("Authentication failed for user: {}", loginRequest.getEmail());
+            log.error("Authentication failed for user: {}", loginRequest.getUsername());
             throw new BadCredentialsException("Invalid credentials");
         } catch (Exception e) {
             log.error("Unexpected error during authentication", e);
             throw new AuthenticationServiceException("Authentication failed", e);
+        }
+    }
+
+    public LoginResponse signup(SignupUserDto signupRequest) {
+        log.info("Starting signup process for email: {}", signupRequest.getEmail());
+        try {
+            // Check if user already exists with the given email
+            if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {
+                log.error("User already exists with email: {}", signupRequest.getEmail());
+                throw new IllegalArgumentException("Email already registered");
+            }
+
+            // Create new user entity
+            User user = new User(
+                    signupRequest.getUsername(),
+                    signupRequest.getEmail(),
+                    passwordEncoder.encode(signupRequest.getPassword()),
+                    Role.CLIENT
+            );
+
+            // Set profile image if provided
+            if (signupRequest.getProfileImage() != null) {
+                user.setProfileImage(signupRequest.getProfileImage());
+            }
+
+            // Save the user
+            User savedUser = userRepository.save(user);
+            log.info("User successfully created with email: {}", savedUser.getEmail());
+
+            // Perform login
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            signupRequest.getEmail(),
+                            signupRequest.getPassword()
+                    )
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Generate JWT token
+            String jwt = jwtService.generateToken(savedUser);
+            log.info("Authentication successful for new user: {}", savedUser.getEmail());
+
+            // Return login response with token
+            return LoginResponse.builder()  // Assuming LoginResponse still uses builder pattern
+                    .token(jwt)
+                    .id(savedUser.getId())
+                    .email(savedUser.getEmail())
+                    .username(savedUser.getUsername())
+                    .role(savedUser.getRole())
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+            log.error("Signup failed: {}", e.getMessage());
+            throw e;
+        } catch (BadCredentialsException e) {
+            log.error("Authentication failed after signup for user: {}", signupRequest.getEmail());
+            throw new BadCredentialsException("Authentication failed after signup");
+        } catch (Exception e) {
+            log.error("Unexpected error during signup/login", e);
+            throw new AuthenticationServiceException("Signup/Login failed", e);
         }
     }
 }

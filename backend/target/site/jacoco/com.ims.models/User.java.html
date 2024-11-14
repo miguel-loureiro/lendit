@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>User.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.models</a> &gt; <span class="el_source">User.java</span></div><h1>User.java</h1><pre class="source lang-java linenums">package com.ims.models;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Builder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import java.util.*;
+
+@Entity
+@Table(name = &quot;users&quot;)
+@Setter
+@Getter
+public class User implements UserDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
+    private Integer id;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(unique = true, length = 100, nullable = false)
+    private String email;
+
+    @JsonIgnore // Prevent serialization of the password
+    @Column(nullable = false, length = 60)
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    private String profileImage;
+
+    @Version
+    private Long version;
+
+<span class="pc" id="L42">    @OneToMany(mappedBy = &quot;user&quot;, fetch = FetchType.LAZY, cascade = CascadeType.ALL)</span>
+    private Set&lt;Loan&gt; loans = new HashSet&lt;&gt;(); // Add this field to track loans
+
+    // No-argument constructor
+<span class="fc" id="L46">    public User() {}</span>
+
+    // Constructor with all fields except id
+<span class="fc" id="L49">    public User(String username, String email, String password, Role role) {</span>
+<span class="fc" id="L50">        this.username = username;</span>
+<span class="fc" id="L51">        this.email = email;</span>
+<span class="fc" id="L52">        this.password = password;</span>
+<span class="fc" id="L53">        this.role = role;</span>
+<span class="fc" id="L54">    }</span>
+
+    // Constructor with loans
+<span class="nc" id="L57">    public User(String username, String email, String password, Role role, Set&lt;Loan&gt; loans) {</span>
+<span class="nc" id="L58">        this.username = username;</span>
+<span class="nc" id="L59">        this.email = email;</span>
+<span class="nc" id="L60">        this.password = password;</span>
+<span class="nc" id="L61">        this.role = role;</span>
+<span class="nc" id="L62">        this.loans = loans;</span>
+<span class="nc" id="L63">    }</span>
+
+<span class="fc" id="L65">    public &lt;T&gt; User(String testEmail, String password, List&lt;T&gt; ts) {</span>
+<span class="fc" id="L66">    }</span>
+
+<span class="fc" id="L68">    public User(String mail, String password, Role role) {</span>
+<span class="fc" id="L69">    }</span>
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="fc" id="L75">        User user = (User ) o;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        return Objects.equals(username, user.username) &amp;&amp;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                Objects.equals(email, user.email);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L82">        return Objects.hash(username, email);</span>
+    }
+
+    @Override
+    public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
+<span class="fc" id="L87">        return List.of(new SimpleGrantedAuthority(&quot;ROLE_&quot; + role.name()));</span>
+    }
+
+    // UserDetails methods
+    @Override
+<span class="fc" id="L92">    public String getUsername() { return username; }</span>
+
+    @Override
+<span class="fc" id="L95">    public String getPassword() { return password; }</span>
+
+    @Override
+<span class="fc" id="L98">    public boolean isAccountNonExpired() { return true; }</span>
+
+    @Override
+<span class="fc" id="L101">    public boolean isAccountNonLocked() { return true; }</span>
+
+    @Override
+<span class="fc" id="L104">    public boolean isCredentialsNonExpired() { return true; }</span>
+
+    @Override
+<span class="fc" id="L107">    public boolean isEnabled() { return true; }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L111">        return &quot;User {&quot; +</span>
+                &quot;id=&quot; + id +
+                &quot;, username='&quot; + username + '\'' +
+                &quot;, email='&quot; + email + '\'' +
+                &quot;, role=&quot; + role +
+                &quot;, profileImage='&quot; + profileImage + '\'' +
+                '}';
+    }
+
+    // Check if the user has any active or overdue loans for the given item
+    public boolean hasActiveLoanForItem(Item item) {
+<span class="nc" id="L122">        return loans.stream()</span>
+<span class="nc" id="L123">                .filter(loan -&gt; loan.getItem().equals(item))</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                .anyMatch(loan -&gt; loan.getStatus() == LoanStatus.ACTIVE);</span>
+    }
+
+    // Check if the user can borrow the item directly (item is available and user has no active loans for the item)
+    public boolean isAvailableForDirectLoan(Item item) {
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        return item.isAvailableForDirectLoan() &amp;&amp; !hasActiveLoanForItem(item);</span>
+    }
+
+    public int getLoanLimit() {
+<span class="nc" id="L133">        return 2;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

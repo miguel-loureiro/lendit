@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">NotificationService.java</span></div><h1>NotificationService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.models.Item;
+import com.ims.models.Loan;
+import com.ims.models.LoanStatus;
+import com.ims.models.User;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
+
+@Service
+<span class="nc" id="L19">@Slf4j</span>
+public class NotificationService {
+
+    private final EmailService emailService;
+    private final LoanService loanService;
+
+    @Autowired
+<span class="nc" id="L26">    public NotificationService(EmailService emailService, LoanService loanService) {</span>
+<span class="nc" id="L27">        this.emailService = emailService;</span>
+<span class="nc" id="L28">        this.loanService = loanService;</span>
+<span class="nc" id="L29">    }</span>
+
+    @Async(&quot;notificationExecutor&quot;)
+    public void sendItemRequestConfirmation(User user, Item item, int quantity) {
+<span class="nc" id="L33">        String subject = &quot;Item Request Confirmation&quot;;</span>
+<span class="nc" id="L34">        String content = String.format(&quot;&quot;&quot;</span>
+            Dear %s,
+            
+            Your request for %d unit(s) of %s has been received and is being processed.
+            
+            Item Details:
+            - Designation: %s
+            - Barcode: %s
+            - Requested Quantity: %d
+            
+            We will notify you once your request has been fulfilled.
+            
+            Best regards,
+            Item Management System
+            &quot;&quot;&quot;,
+<span class="nc" id="L49">                user.getUsername(),</span>
+<span class="nc" id="L50">                quantity,</span>
+<span class="nc" id="L51">                item.getDesignation(),</span>
+<span class="nc" id="L52">                item.getDesignation(),</span>
+<span class="nc" id="L53">                item.getBarcode(),</span>
+<span class="nc" id="L54">                quantity</span>
+        );
+
+        try {
+<span class="nc" id="L58">            emailService.sendSimpleMessage(user.getEmail(), subject, content);</span>
+<span class="nc" id="L59">            log.info(&quot;Sent request confirmation email to user: {}&quot;, user.getEmail());</span>
+<span class="nc" id="L60">        } catch (Exception e) {</span>
+<span class="nc" id="L61">            log.error(&quot;Failed to send request confirmation email to {}&quot;, user.getEmail(), e);</span>
+            // Don't throw exception - notification failure shouldn't break the main flow
+<span class="nc" id="L63">        }</span>
+<span class="nc" id="L64">    }</span>
+
+    @Async(&quot;notificationExecutor&quot;)
+    public void sendRequestFulfillmentNotification(User user, Item item, int quantity, LocalDate returnDate) {
+<span class="nc" id="L68">        String subject = &quot;Item Request Fulfilled&quot;;</span>
+<span class="nc" id="L69">        String content = String.format(&quot;&quot;&quot;</span>
+            Dear %s,
+            
+            Your request for %d unit(s) of %s has been fulfilled.
+            
+            Item Details:
+            - Designation: %s
+            - Barcode: %s
+            - Quantity: %d
+            - Return Date: %s
+            
+            Please remember to return the item(s) by the specified return date.
+            
+            Best regards,
+            Item Management System
+            &quot;&quot;&quot;,
+<span class="nc" id="L85">                user.getUsername(),</span>
+<span class="nc" id="L86">                quantity,</span>
+<span class="nc" id="L87">                item.getDesignation(),</span>
+<span class="nc" id="L88">                item.getDesignation(),</span>
+<span class="nc" id="L89">                item.getBarcode(),</span>
+<span class="nc" id="L90">                quantity,</span>
+<span class="nc" id="L91">                returnDate.format(DateTimeFormatter.ISO_LOCAL_DATE)</span>
+        );
+
+        try {
+<span class="nc" id="L95">            emailService.sendSimpleMessage(user.getEmail(), subject, content);</span>
+<span class="nc" id="L96">            log.info(&quot;Sent fulfillment notification email to user: {}&quot;, user.getEmail());</span>
+<span class="nc" id="L97">        } catch (Exception e) {</span>
+<span class="nc" id="L98">            log.error(&quot;Failed to send fulfillment notification email to {}&quot;, user.getEmail(), e);</span>
+<span class="nc" id="L99">        }</span>
+<span class="nc" id="L100">    }</span>
+
+    @Async(&quot;notificationExecutor&quot;)
+    public void sendItemReturnConfirmation(User user, Item item, int quantity, int remainingLoanQuantity) {
+<span class="nc" id="L104">        String subject = &quot;Item Return Confirmation&quot;;</span>
+<span class="nc" id="L105">        String content = String.format(&quot;&quot;&quot;</span>
+            Dear %s,
+            
+            We confirm the return of %d unit(s) of %s.
+            
+            Item Details:
+            - Designation: %s
+            - Barcode: %s
+            - Returned Quantity: %d
+            %s
+            
+            Best regards,
+            Item Management System
+            &quot;&quot;&quot;,
+<span class="nc" id="L119">                user.getUsername(),</span>
+<span class="nc" id="L120">                quantity,</span>
+<span class="nc" id="L121">                item.getDesignation(),</span>
+<span class="nc" id="L122">                item.getDesignation(),</span>
+<span class="nc" id="L123">                item.getBarcode(),</span>
+<span class="nc" id="L124">                quantity,</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                remainingLoanQuantity &gt; 0 ?</span>
+<span class="nc" id="L126">                        String.format(&quot;- Remaining Loan Quantity: %d&quot;, remainingLoanQuantity) :</span>
+<span class="nc" id="L127">                        &quot;Your loan has been completed.&quot;</span>
+        );
+
+        try {
+<span class="nc" id="L131">            emailService.sendSimpleMessage(user.getEmail(), subject, content);</span>
+<span class="nc" id="L132">            log.info(&quot;Sent return confirmation email to user: {}&quot;, user.getEmail());</span>
+<span class="nc" id="L133">        } catch (Exception e) {</span>
+<span class="nc" id="L134">            log.error(&quot;Failed to send return confirmation email to {}&quot;, user.getEmail(), e);</span>
+<span class="nc" id="L135">        }</span>
+<span class="nc" id="L136">    }</span>
+
+    // Scheduled reminder that runs every day at 10:00 AM
+    @Scheduled(cron = &quot;${notification.schedule.reminders:0 0 10 * * ?}&quot;)
+    public void sendReturnReminders() {
+<span class="nc" id="L141">        log.info(&quot;Starting scheduled return reminder check&quot;);</span>
+
+<span class="nc" id="L143">        LocalDate tomorrow = LocalDate.now().plusDays(1);</span>
+<span class="nc" id="L144">        List&lt;LoanStatus&gt; activeStatuses = Arrays.asList(LoanStatus.ACTIVE, LoanStatus.EXTENDED); // Adjust as necessary</span>
+
+        try {
+<span class="nc" id="L147">            List&lt;Loan&gt; dueSoonLoans = loanService.findActiveLoansByReturnDate(tomorrow, activeStatuses);</span>
+            // Process the dueSoonLoans list as needed
+<span class="nc" id="L149">        } catch (Exception e) {</span>
+<span class="nc" id="L150">            log.error(&quot;Error while sending return reminders&quot;, e);</span>
+<span class="nc" id="L151">        }</span>
+<span class="nc" id="L152">    }</span>
+
+    @Async(&quot;notificationExecutor&quot;)
+    private void sendReturnReminder(Loan loan) {
+<span class="nc" id="L156">        String subject = &quot;Return Reminder: Items Due Tomorrow&quot;;</span>
+<span class="nc" id="L157">        String content = String.format(&quot;&quot;&quot;</span>
+            Dear %s,
+            
+            This is a reminder that you have items due for return tomorrow.
+            
+            Loan Details:
+            - Item: %s
+            - Barcode: %s
+            - Quantity: %d
+            - Due Date: %s
+            
+            Please ensure to return the items by the due date to avoid any penalties.
+            
+            If you have already returned these items, please disregard this message.
+            
+            Best regards,
+            Item Management System
+            &quot;&quot;&quot;,
+<span class="nc" id="L175">                loan.getUser().getUsername(),</span>
+<span class="nc" id="L176">                loan.getItem().getDesignation(),</span>
+<span class="nc" id="L177">                loan.getItem().getBarcode(),</span>
+<span class="nc" id="L178">                loan.getQuantity(),</span>
+<span class="nc" id="L179">                loan.getReturnDate().format(DateTimeFormatter.ISO_LOCAL_DATE)</span>
+        );
+
+        try {
+<span class="nc" id="L183">            emailService.sendSimpleMessage(loan.getUser().getEmail(), subject, content);</span>
+<span class="nc" id="L184">            log.debug(&quot;Sent reminder for loan ID: {}&quot;, loan.getId());</span>
+<span class="nc" id="L185">        } catch (Exception e) {</span>
+<span class="nc" id="L186">            log.error(&quot;Failed to send reminder for loan ID: {}&quot;, loan.getId(), e);</span>
+<span class="nc" id="L187">        }</span>
+<span class="nc" id="L188">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

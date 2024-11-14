@@ -1,0 +1,16 @@
+com/ims/security/CustomUserDetailsServiceTest.class
+com/ims/models/UserTest$ToStringTests.class
+com/ims/services/EmailServiceTest.class
+com/ims/models/UserTest$ConstructorTests.class
+com/ims/models/UserTest$PropertyTests.class
+com/ims/services/UserServiceTest.class
+com/ims/ImsApplicationTests.class
+com/ims/services/CustomUserDetailsServiceTest.class
+com/ims/models/UserTest$UserDetailsTests.class
+com/ims/services/LoanServiceTest.class
+com/ims/models/UserTest.class
+com/ims/security/UserSecurityTest.class
+com/ims/services/ItemServiceTest.class
+com/ims/services/AuthenticationServiceTest.class
+com/ims/security/JwtServiceTest.class
+com/ims/models/UserTest$EqualityTests.class

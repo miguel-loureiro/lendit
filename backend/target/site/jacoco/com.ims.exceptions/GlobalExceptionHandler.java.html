@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.exceptions</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.ims.exceptions;
+
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.util.Collections;
+import java.util.Map;
+
+@ControllerAdvice
+<span class="nc" id="L15">public class GlobalExceptionHandler {</span>
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleIllegalArgument(IllegalArgumentException e) {
+<span class="nc" id="L19">        return new ResponseEntity&lt;&gt;(Collections.singletonMap(&quot;error&quot;, e.getMessage()),</span>
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleNotFound(EntityNotFoundException e) {
+<span class="nc" id="L25">        return new ResponseEntity&lt;&gt;(Collections.singletonMap(&quot;error&quot;, e.getMessage()),</span>
+                HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleAccessDenied(AccessDeniedException e) {
+<span class="nc" id="L31">        return new ResponseEntity&lt;&gt;(Collections.singletonMap(&quot;error&quot;, e.getMessage()),</span>
+                HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleDataIntegrity(DataIntegrityViolationException e) {
+<span class="nc" id="L37">        return new ResponseEntity&lt;&gt;(Collections.singletonMap(&quot;error&quot;, &quot;Data integrity violation&quot;),</span>
+                HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleGeneral(Exception e) {
+<span class="nc" id="L43">        return new ResponseEntity&lt;&gt;(Collections.singletonMap(&quot;error&quot;, &quot;An unexpected error occurred&quot;),</span>
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

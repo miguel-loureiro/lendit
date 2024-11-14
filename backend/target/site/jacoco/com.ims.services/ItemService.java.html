@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ItemService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">ItemService.java</span></div><h1>ItemService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.models.Item;
+import com.ims.models.ItemRequest;
+import com.ims.models.ItemRequestStatus;
+import com.ims.models.dtos.ItemResponseDto;
+import com.ims.models.dtos.request.CreateItemDto;
+import com.ims.models.dtos.request.UpdateItemDto;
+import com.ims.models.dtos.response.ItemCreatedDto;
+import com.ims.models.dtos.response.ItemUpdatedDto;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.ItemRequestRepository;
+import com.ims.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+<span class="fc" id="L33">@Slf4j</span>
+public class ItemService {
+
+    @Autowired
+    private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
+    private final UserRepository userRepository;
+    private final UserService userService;
+
+    public ResponseEntity&lt;Page&lt;ItemResponseDto&gt;&gt; getAllItems(
+            @RequestParam(name = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+            @RequestParam(name = &quot;size&quot;, defaultValue = &quot;10&quot;) int size) throws IOException {
+
+<span class="fc" id="L46">        Pageable paging = PageRequest.of(page, size, Sort.by(&quot;designation&quot;).ascending());</span>
+<span class="fc" id="L47">        Page&lt;Item&gt; itemsPage = itemRepository.findAll(paging);</span>
+
+<span class="fc" id="L49">        Page&lt;ItemResponseDto&gt; itemDtos = itemsPage.map(ItemResponseDto::new);</span>
+
+<span class="fc" id="L51">        return ResponseEntity.ok(itemDtos);</span>
+    }
+
+    public ResponseEntity&lt;Item&gt; createItem(@RequestBody CreateItemDto createItemDto) {
+        // Check if designation or barcode already exists
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (itemRepository.findByDesignation(createItemDto.getDesignation()).isPresent()) {</span>
+<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;An item with this designation already exists.&quot;);</span>
+        }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (itemRepository.findByBarcode(createItemDto.getBarcode()).isPresent()) {</span>
+<span class="fc" id="L60">            throw new IllegalArgumentException(&quot;An item with this barcode already exists.&quot;);</span>
+        }
+
+        // Convert DTO to Item entity
+<span class="fc" id="L64">        Item item = createItemDto.toItem();</span>
+
+        // Save the item to the repository
+<span class="fc" id="L67">        Item savedItem = itemRepository.save(item);</span>
+
+        // Return the created item with a 201 Created status
+<span class="fc" id="L70">        return ResponseEntity.status(HttpStatus.CREATED).body(savedItem);</span>
+    }
+
+    public ResponseEntity&lt;ItemUpdatedDto&gt; updateItem(Integer id, UpdateItemDto updateDto) {
+<span class="fc" id="L74">        log.info(&quot;Attempting to update item with ID: {}&quot;, id);</span>
+
+        // Find the existing item
+<span class="fc" id="L77">        Item existingItem = itemRepository.findById(id)</span>
+<span class="fc" id="L78">                .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L79">                    log.error(&quot;Item not found with ID: {}&quot;, id);</span>
+<span class="fc" id="L80">                    return new EntityNotFoundException(&quot;Item not found with id: &quot; + id);</span>
+                });
+
+        // Check if the new designation or barcode already exists for a different item
+<span class="fc" id="L84">        checkExistingDesignationAndBarcode(updateDto, existingItem);</span>
+
+        // Update the item
+<span class="fc" id="L87">        existingItem.setDesignation(updateDto.getDesignation());</span>
+<span class="fc" id="L88">        existingItem.setBarcode(updateDto.getBarcode());</span>
+<span class="fc" id="L89">        existingItem.setBrand(updateDto.getBrand());</span>
+<span class="fc" id="L90">        existingItem.setCategory(updateDto.getCategory());</span>
+<span class="fc" id="L91">        existingItem.setPurchasePrice(updateDto.getPurchasePrice());</span>
+<span class="fc" id="L92">        existingItem.setTotalQuantity(updateDto.getStockQuantity());</span>
+
+        // Save the updated item (JPA will handle the version check here)
+<span class="fc" id="L95">        Item updatedItem = itemRepository.save(existingItem);</span>
+
+        // Convert to response DTO
+<span class="fc" id="L98">        ItemUpdatedDto responseDto = ItemUpdatedDto.builder()</span>
+<span class="fc" id="L99">                .id(updatedItem.getId())</span>
+<span class="fc" id="L100">                .designation(updatedItem.getDesignation())</span>
+<span class="fc" id="L101">                .description(updatedItem.getDescription())</span>
+<span class="fc" id="L102">                .category(updatedItem.getCategory())</span>
+<span class="fc" id="L103">                .brand(updatedItem.getBrand())</span>
+<span class="fc" id="L104">                .barcode(updatedItem.getBarcode())</span>
+<span class="fc" id="L105">                .purchasePrice(updatedItem.getPurchasePrice())</span>
+<span class="fc" id="L106">                .stockQuantity(updatedItem.getTotalQuantity())</span>
+<span class="fc" id="L107">                .version(updatedItem.getVersion())</span>
+<span class="fc" id="L108">                .build();</span>
+
+<span class="fc" id="L110">        log.info(&quot;Successfully updated item with ID: {}&quot;, id);</span>
+<span class="fc" id="L111">        return ResponseEntity.ok(responseDto);</span>
+    }
+
+    public ResponseEntity&lt;Void&gt; deleteItem(Integer id) {
+<span class="fc" id="L115">        log.info(&quot;Attempting to delete item with ID: {}&quot;, id);</span>
+
+<span class="fc" id="L117">        Optional&lt;Item&gt; itemOptional = itemRepository.findById(id);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (itemOptional.isPresent()) {</span>
+<span class="fc" id="L119">            Item item = itemOptional.get();</span>
+
+            // Check if the item has nay pending request
+<span class="nc" id="L122">            List&lt;ItemRequest&gt; pendingRequests = itemRequestRepository.findByItemAndStatusIn(item, List.of(ItemRequestStatus.PENDING));</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (!pendingRequests.isEmpty()) {</span>
+<span class="nc" id="L124">                log.error(&quot;Cannot delete item with ID {} due to pending requests&quot;, id);</span>
+<span class="nc" id="L125">                throw new IllegalStateException(&quot;Cannot delete item with pending requests&quot;);</span>
+            }
+            // No pending requests, so delete the item
+<span class="nc" id="L128">            itemRepository.delete(item);</span>
+<span class="nc" id="L129">            log.info(&quot;Successfully deleted item with ID: {}&quot;, id);</span>
+<span class="nc" id="L130">            return ResponseEntity.noContent().&lt;Void&gt;build();</span>
+
+        } else {
+<span class="fc" id="L133">            log.error(&quot;Item not found with ID: {}&quot;, id);</span>
+<span class="fc" id="L134">            throw new EntityNotFoundException(&quot;Item not found with id: &quot; + id);</span>
+        }
+    }
+
+    private void checkExistingDesignationAndBarcode(UpdateItemDto updateDto, Item existingItem) {
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (!existingItem.getDesignation().equals(updateDto.getDesignation()) &amp;&amp;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                itemRepository.findByDesignation(updateDto.getDesignation()).isPresent()) {</span>
+<span class="fc" id="L141">            throw new IllegalArgumentException(&quot;An item with this designation already exists.&quot;);</span>
+        }
+
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (!existingItem.getBarcode().equals(updateDto.getBarcode()) &amp;&amp;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                itemRepository.findByBarcode(updateDto.getBarcode()).isPresent()) {</span>
+<span class="fc" id="L146">            throw new IllegalArgumentException(&quot;An item with this barcode already exists.&quot;);</span>
+        }
+<span class="fc" id="L148">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitialDataSeeder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims</a> &gt; <span class="el_source">InitialDataSeeder.java</span></div><h1>InitialDataSeeder.java</h1><pre class="source lang-java linenums">package com.ims;
+
+import com.ims.models.Category;
+import com.ims.models.Item;
+import com.ims.models.Role;
+import com.ims.models.User;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.*;
+
+@Component
+@Profile(&quot;test&quot;)
+<span class="fc" id="L23">public class InitialDataSeeder implements ApplicationListener&lt;ContextRefreshedEvent&gt; {</span>
+
+    @Autowired
+    private ItemRepository itemRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+<span class="nc" id="L36">        addSuperUser();</span>
+<span class="nc" id="L37">        addManagerUser();</span>
+<span class="nc" id="L38">        addClientUser();</span>
+<span class="nc" id="L39">        addClientUser2();</span>
+<span class="nc" id="L40">        seedItems();</span>
+<span class="nc" id="L41">    }</span>
+
+    private void seedItems() {
+        // Avoid duplication by checking if items already exist
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (itemRepository.count() &gt; 0) {</span>
+<span class="nc" id="L46">            return; // Items already seeded</span>
+        }
+
+<span class="nc" id="L49">        List&lt;Item&gt; items = generateRandomItems(30);</span>
+<span class="nc" id="L50">        itemRepository.saveAll(items);</span>
+<span class="nc" id="L51">    }</span>
+
+    private List&lt;Item&gt; generateRandomItems(int count) {
+<span class="nc" id="L54">        List&lt;Item&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L55">        Set&lt;String&gt; uniqueDesignations = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L56">        Random random = new Random();</span>
+
+<span class="nc" id="L58">        String[] brands = {</span>
+                &quot;Lenovo&quot;, &quot;Logitech&quot;, &quot;Dell&quot;, &quot;Acer&quot;, &quot;HP&quot;, &quot;Samsung&quot;,
+                &quot;TP-Link&quot;, &quot;Seagate&quot;, &quot;Asus&quot;, &quot;Apple&quot;, &quot;Microsoft&quot;,
+                &quot;Razer&quot;, &quot;BenQ&quot;, &quot;LG&quot;, &quot;Corsair&quot;, &quot;Netgear&quot;, &quot;Synology&quot;,
+                &quot;Western Digital&quot;, &quot;HyperX&quot;, &quot;SteelSeries&quot;
+        };
+
+<span class="nc" id="L65">        String[] categories = {</span>
+                &quot;Laptop&quot;, &quot;Mouse&quot;, &quot;Monitor&quot;, &quot;Router&quot;, &quot;Storage&quot;,
+                &quot;Headphones&quot;, &quot;Keyboard&quot;, &quot;Gaming&quot;, &quot;Smartphone&quot;, &quot;Tablet&quot;
+        };
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        while (items.size() &lt; count) {</span>
+<span class="nc" id="L71">            String designation = generateUniqueDesignation(uniqueDesignations);</span>
+<span class="nc" id="L72">            String barcode = generateRandomBarcode();</span>
+<span class="nc" id="L73">            String brand = brands[random.nextInt(brands.length)];</span>
+<span class="nc" id="L74">            String category = categories[random.nextInt(categories.length)];</span>
+<span class="nc" id="L75">            BigDecimal purchasePrice = generateRandomPrice(random);</span>
+           // int stockQuantity = 10 + random.nextInt(91);
+<span class="nc" id="L77">            int stockQuantity = 10;</span>
+
+<span class="nc" id="L79">            Item item = new Item(designation, barcode, brand, category, purchasePrice, stockQuantity);</span>
+<span class="nc" id="L80">            items.add(item);</span>
+<span class="nc" id="L81">        }</span>
+
+<span class="nc" id="L83">        return items;</span>
+    }
+
+    private String generateUniqueDesignation(Set&lt;String&gt; uniqueDesignations) {
+<span class="nc" id="L87">        Random random = new Random();</span>
+<span class="nc" id="L88">        String[] designations = {</span>
+                &quot;ThinkPad X1 Carbon Gen 9&quot;, &quot;MX Master 3&quot;, &quot;Dell XPS 13&quot;,
+                &quot;Acer Predator Helios 300&quot;, &quot;HP Spectre x360&quot;, &quot;Logitech G502&quot;,
+                &quot;Samsung Odyssey G7&quot;, &quot;TP-Link Archer AX6000&quot;, &quot;Seagate Expansion 2TB&quot;,
+                &quot;Dell UltraSharp U2720Q&quot;, &quot;Asus ROG Zephyrus G14&quot;, &quot;Apple MacBook Air&quot;,
+                &quot;Microsoft Surface Laptop 4&quot;, &quot;Logitech K810&quot;, &quot;Razer Huntsman Elite&quot;,
+                &quot;BenQ PD3220U&quot;, &quot;LG UltraFine 5K&quot;, &quot;Corsair K95 RGB&quot;,
+                &quot;Netgear Nighthawk AX12&quot;, &quot;Synology DS220+&quot;, &quot;Western Digital My Passport&quot;,
+                &quot;Acer Aspire 5&quot;, &quot;Lenovo Yoga 7i&quot;, &quot;HP Omen 15&quot;,
+                &quot;Dell Inspiron 15&quot;, &quot;Logitech C920&quot;, &quot;Samsung Galaxy Book&quot;,
+                &quot;Apple iPad Pro&quot;, &quot;HyperX Cloud II&quot;, &quot;SteelSeries Arctis 7&quot;
+        };
+
+        String designation;
+        do {
+<span class="nc" id="L103">            designation = designations[random.nextInt(designations.length)];</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        } while (!uniqueDesignations.add(designation));</span>
+
+<span class="nc" id="L106">        return designation;</span>
+    }
+
+    private String generateRandomBarcode() {
+<span class="nc" id="L110">        Random random = new Random();</span>
+<span class="nc" id="L111">        StringBuilder barcode = new StringBuilder(&quot;590&quot;);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        for (int i = 0; i &lt; 10; i++) {</span>
+<span class="nc" id="L113">            barcode.append(random.nextInt(10));</span>
+        }
+<span class="nc" id="L115">        return barcode.toString();</span>
+    }
+
+    private BigDecimal generateRandomPrice(Random random) {
+<span class="nc" id="L119">        return BigDecimal.valueOf(50 + (random.nextDouble() * 950));</span>
+    }
+
+    private void addSuperUser() {
+<span class="nc" id="L123">        String encodedPassword = passwordEncoder.encode(&quot;superpassword&quot;);</span>
+<span class="nc" id="L124">        userRepository.save(new User(&quot;superuser&quot;, &quot;publixoapagar@gmail.com&quot;, encodedPassword, Role.SUPER));</span>
+<span class="nc" id="L125">    }</span>
+
+    private void addManagerUser() {
+<span class="nc" id="L128">        String encodedPassword = passwordEncoder.encode(&quot;managerpassword&quot;);</span>
+<span class="nc" id="L129">        userRepository.save(new User(&quot;manageruser&quot;, &quot;msloureiro2022@gmail.com&quot;, encodedPassword, Role.MANAGER));</span>
+<span class="nc" id="L130">    }</span>
+
+    private void addClientUser() {
+<span class="nc" id="L133">        String encodedPassword = passwordEncoder.encode(&quot;clientpassword&quot;);</span>
+<span class="nc" id="L134">        userRepository.save(new User(&quot;clientuser&quot;, &quot;miguel.silvaloureiro@gmail.com&quot;, encodedPassword, Role.CLIENT));</span>
+<span class="nc" id="L135">    }</span>
+
+    private void addClientUser2() {
+<span class="nc" id="L138">        String encodedPassword = passwordEncoder.encode(&quot;client2password&quot;);</span>
+<span class="nc" id="L139">        userRepository.save(new User(&quot;client2user&quot;, &quot;marta.manuel.ferreira@gmail.com&quot;, encodedPassword, Role.CLIENT));</span>
+<span class="nc" id="L140">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

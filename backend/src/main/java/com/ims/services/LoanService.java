@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class LoanService {
+
     private final LoanRepository loanRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
@@ -80,7 +81,7 @@ public class LoanService {
         return loanRepository.findActiveLoansByReturnDate(returnDate, statuses);
     }
 
-    public Loan createLoan(Integer userId, Integer itemId, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
+    public void createLoan(Integer userId, Integer itemId, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         Item item = itemRepository.findById(itemId)
@@ -88,7 +89,7 @@ public class LoanService {
 
             Loan loan = new Loan(user, item, requestedQuantity, startDate, endDate);
             item.addActiveLoan(loan);
-            return loanRepository.save(loan);
+        loanRepository.save(loan);
     }
 
     /**
@@ -96,12 +97,11 @@ public class LoanService {
      * Validates the loan exists and is active before closing.
      *
      * @param loanId The ID of the loan to close
-     * @return
      * @throws LoanNotFoundException     if the loan doesn't exist
      * @throws InvalidLoanStateException if the loan is already closed
      */
     @Transactional
-    public LoanUpdatedDto endLoan(Integer loanId) {
+    public void endLoan(Integer loanId) {
         if (loanId == null) {
             throw new IllegalArgumentException("Loan ID must not be null");
         }
@@ -123,7 +123,7 @@ public class LoanService {
             log.error("Failed to close loan with ID: {}", loanId, e);
             throw new ServiceException("Failed to close loan", e);
         }
-        return createLoanUpdatedDto(loan);
+        createLoanUpdatedDto(loan);
     }
 
     public LoanUpdatedDto extendLoan(Integer loanId, LocalDate newEndDate) {

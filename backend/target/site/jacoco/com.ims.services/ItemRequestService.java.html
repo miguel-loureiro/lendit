@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ItemRequestService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">ItemRequestService.java</span></div><h1>ItemRequestService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.exceptions.*;
+import com.ims.models.*;
+import com.ims.models.dtos.request.ItemRequestDto;
+import com.ims.models.dtos.request.ItemReturnDto;
+import com.ims.models.dtos.response.RequestedItemDto;
+import com.ims.models.dtos.response.ReturnedItemDto;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.ItemRequestRepository;
+import com.ims.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.ConcurrentModificationException;
+import java.util.List;
+
+@Service
+@Transactional
+<span class="nc" id="L26">@Slf4j</span>
+public class ItemRequestService {
+
+    private final UserRepository userRepository;
+    private final ItemRepository itemRepository;
+    private final ItemRequestRepository itemRequestRepository;
+    private final LoanService loanService;
+    private final NotificationService notificationService;
+
+    private static final int MAX_RETRIES = 3;
+    private static final long INITIAL_BACKOFF_MS = 100;
+
+    @Autowired
+    public ItemRequestService(UserRepository userRepository,
+                              ItemRepository itemRepository,
+                              ItemRequestRepository itemRequestRepository,
+<span class="nc" id="L42">                              LoanService loanService, NotificationService notificationService) {</span>
+<span class="nc" id="L43">        this.userRepository = userRepository;</span>
+<span class="nc" id="L44">        this.itemRepository = itemRepository;</span>
+<span class="nc" id="L45">        this.itemRequestRepository = itemRequestRepository;</span>
+<span class="nc" id="L46">        this.loanService = loanService;</span>
+<span class="nc" id="L47">        this.notificationService = notificationService;</span>
+<span class="nc" id="L48">    }</span>
+
+    public ResponseEntity&lt;RequestedItemDto&gt; createItemRequest(ItemRequestDto input) {
+
+<span class="nc" id="L52">        String userEmail = getCurrentUserEmail();</span>
+
+<span class="nc" id="L54">        validateRequestQuantity(input.getQuantity());</span>
+
+<span class="nc" id="L56">        User user = findAndValidateUser(userEmail);</span>
+
+<span class="nc" id="L58">        int attempts = 0;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        while (attempts &lt; MAX_RETRIES) {</span>
+            try {
+<span class="nc" id="L61">                return attemptCreateItemRequest(input, user);</span>
+<span class="nc" id="L62">            } catch (ObjectOptimisticLockingFailureException e) {</span>
+<span class="nc" id="L63">                attempts++;</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                if (attempts &gt;= MAX_RETRIES) {</span>
+<span class="nc" id="L65">                    throw new ConcurrentModificationException(</span>
+                            &quot;Failed to create item request after &quot; + MAX_RETRIES + &quot; attempts due to concurrent modifications&quot;);
+                }
+                try {
+<span class="nc" id="L69">                    Thread.sleep(INITIAL_BACKOFF_MS * (long) Math.pow(2, attempts - 1));</span>
+<span class="nc" id="L70">                } catch (InterruptedException ie) {</span>
+<span class="nc" id="L71">                    Thread.currentThread().interrupt();</span>
+<span class="nc" id="L72">                    throw new ServiceException(&quot;Request interrupted while waiting to retry&quot;, ie);</span>
+<span class="nc" id="L73">                }</span>
+<span class="nc" id="L74">                log.warn(&quot;Optimistic lock failure, attempt {}/{}&quot;, attempts, MAX_RETRIES);</span>
+<span class="nc" id="L75">            }</span>
+        }
+<span class="nc" id="L77">        throw new ServiceException(&quot;Unexpected exit from retry loop&quot;);</span>
+    }
+
+    public ResponseEntity&lt;ReturnedItemDto&gt; returnItem(ItemReturnDto input) {
+
+<span class="nc" id="L82">        String userEmail = getCurrentUserEmail();</span>
+
+<span class="nc" id="L84">        User user = findAndValidateUser(userEmail);</span>
+<span class="nc" id="L85">        Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())</span>
+<span class="nc" id="L86">                .orElseThrow(() -&gt; new ItemNotFoundException(&quot;Item not found&quot;));</span>
+
+<span class="nc" id="L88">        validateReturnQuantity(input.getReturnQuantity());</span>
+
+<span class="nc" id="L90">        int attempts = 0;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        while (attempts &lt; MAX_RETRIES) {</span>
+            try {
+<span class="nc" id="L93">                return attemptReturnItem(input, user, item);</span>
+<span class="nc" id="L94">            } catch (ObjectOptimisticLockingFailureException e) {</span>
+<span class="nc" id="L95">                attempts++;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                if (attempts &gt;= MAX_RETRIES) {</span>
+<span class="nc" id="L97">                    throw new ConcurrentModificationException(</span>
+                            &quot;Failed to process item return after &quot; + MAX_RETRIES + &quot; attempts due to concurrent modifications&quot;);
+                }
+                try {
+<span class="nc" id="L101">                    Thread.sleep(INITIAL_BACKOFF_MS * (long) Math.pow(2, attempts - 1));</span>
+<span class="nc" id="L102">                } catch (InterruptedException ie) {</span>
+<span class="nc" id="L103">                    Thread.currentThread().interrupt();</span>
+<span class="nc" id="L104">                    throw new ServiceException(&quot;Return process interrupted while waiting to retry&quot;, ie);</span>
+<span class="nc" id="L105">                }</span>
+<span class="nc" id="L106">                log.warn(&quot;Optimistic lock failure during return, attempt {}/{}&quot;, attempts, MAX_RETRIES);</span>
+<span class="nc" id="L107">            }</span>
+        }
+<span class="nc" id="L109">        throw new ServiceException(&quot;Unexpected exit from return retry loop&quot;);</span>
+    }
+
+    private static String getCurrentUserEmail() {
+
+<span class="nc" id="L114">        return SecurityContextHolder.getContext()</span>
+<span class="nc" id="L115">                .getAuthentication()</span>
+<span class="nc" id="L116">                .getName();</span>
+    }
+
+    private ResponseEntity&lt;ReturnedItemDto&gt; attemptReturnItem(ItemReturnDto input, User user, Item item) {
+        // Verify active loan exists for this user and item
+<span class="nc" id="L121">        Loan activeLoan = loanService.findActiveLoan(user.getId(), item.getId())</span>
+<span class="nc" id="L122">                .orElseThrow(() -&gt; new LoanNotFoundException(&quot;No active loan found for this item and user&quot;));</span>
+
+        // Validate return quantity against loan quantity
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (input.getReturnQuantity() &gt; activeLoan.getQuantity()) {</span>
+<span class="nc" id="L126">            throw new InvalidQuantityException(</span>
+<span class="nc" id="L127">                    String.format(&quot;Return quantity (%d) exceeds borrowed quantity (%d)&quot;,</span>
+<span class="nc" id="L128">                            input.getReturnQuantity(), activeLoan.getQuantity()));</span>
+        }
+
+        // Update item's available quantity
+<span class="nc" id="L132">        int newAvailableQuantity = item.getAvailableQuantity() + input.getReturnQuantity();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (newAvailableQuantity &gt; item.getTotalQuantity()) {</span>
+<span class="nc" id="L134">            throw new InvalidQuantityException(&quot;Return would exceed total item quantity&quot;);</span>
+        }
+<span class="nc" id="L136">        item.setAvailableQuantity(newAvailableQuantity);</span>
+<span class="nc" id="L137">        itemRepository.save(item);</span>
+<span class="nc" id="L138">        log.debug(&quot;Updated available quantity for item: {} - New Available: {}&quot;, item.getId(), newAvailableQuantity);</span>
+
+        // Close loan or update quantity
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (input.getReturnQuantity() == activeLoan.getQuantity()) {</span>
+<span class="nc" id="L142">            loanService.endLoan(activeLoan.getId());</span>
+        } else {
+<span class="nc" id="L144">            loanService.updateLoanQuantity(activeLoan.getId(),</span>
+<span class="nc" id="L145">                    activeLoan.getQuantity() - input.getReturnQuantity());</span>
+        }
+
+        // Check for pending requests that can now be fulfilled
+<span class="nc" id="L149">        processPendingRequests(item);</span>
+
+        // Send return confirmation
+<span class="nc" id="L152">        notificationService.sendItemReturnConfirmation(</span>
+                user,
+                item,
+<span class="nc" id="L155">                input.getReturnQuantity(),</span>
+<span class="nc" id="L156">                activeLoan.getQuantity() - input.getReturnQuantity()</span>
+        );
+
+<span class="nc" id="L159">        return ResponseEntity.ok(ReturnedItemDto.builder()</span>
+<span class="nc" id="L160">                .username(user.getUsername())</span>
+<span class="nc" id="L161">                .designation(item.getDesignation())</span>
+<span class="nc" id="L162">                .barcode(item.getBarcode())</span>
+<span class="nc" id="L163">                .returnedQuantity(input.getReturnQuantity())</span>
+<span class="nc" id="L164">                .remainingLoanQuantity(activeLoan.getQuantity() - input.getReturnQuantity())</span>
+<span class="nc" id="L165">                .build());</span>
+    }
+
+    private void processPendingRequests(Item item) {
+<span class="nc" id="L169">        List&lt;ItemRequest&gt; pendingRequests = itemRequestRepository</span>
+<span class="nc" id="L170">                .findByItemAndStatusOrderByQueuePosition(item, ItemRequestStatus.PENDING);</span>
+
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        for (ItemRequest request : pendingRequests) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">            if (canFulfillRequest(item, request.getRequestedQuantity())) {</span>
+                try {
+<span class="nc" id="L175">                    fulfillRequest(request);</span>
+<span class="nc" id="L176">                } catch (Exception e) {</span>
+<span class="nc" id="L177">                    log.error(&quot;Failed to fulfill pending request {} after item return&quot;, request.getId(), e);</span>
+                    // Continue processing other requests even if one fails
+<span class="nc" id="L179">                }</span>
+            } else {
+                break; // Stop if we can't fulfill the next request
+            }
+<span class="nc" id="L183">        }</span>
+<span class="nc" id="L184">    }</span>
+
+    private void validateReturnQuantity(int returnQuantity) {
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (returnQuantity &lt;= 0) {</span>
+<span class="nc" id="L188">            throw new InvalidQuantityException(&quot;Return quantity must be greater than 0&quot;);</span>
+        }
+<span class="nc" id="L190">    }</span>
+
+    private ResponseEntity&lt;RequestedItemDto&gt; attemptCreateItemRequest(ItemRequestDto input, User user) {
+<span class="nc" id="L193">        Item item = itemRepository.findByDesignationOrBarcode(input.getDesignation(), input.getBarcode())</span>
+<span class="nc" id="L194">                .orElseThrow(() -&gt; new ItemNotFoundException(&quot;Item not found&quot;));</span>
+
+<span class="nc" id="L196">        validateItemQuantities(item);</span>
+<span class="nc" id="L197">        validateAvailableQuantity(input.getQuantity(), item);</span>
+
+        // Create initial request without altering available quantity here
+<span class="nc" id="L200">        ItemRequest itemRequest = createAndSaveInitialRequest(input, user, item);</span>
+
+        // Send confirmation email
+<span class="nc" id="L203">        notificationService.sendItemRequestConfirmation(user, item, input.getQuantity());</span>
+
+        // Ensure fulfillRequest is only called if the request is pending
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if (canFulfillRequest(item, input.getQuantity()) &amp;&amp; itemRequest.getStatus() == ItemRequestStatus.PENDING) {</span>
+<span class="nc" id="L207">            fulfillRequest(itemRequest); // this will handle the quantity reduction</span>
+        }
+
+<span class="nc" id="L210">        return ResponseEntity.ok(RequestedItemDto.builder()</span>
+<span class="nc" id="L211">                .username(user.getUsername())</span>
+<span class="nc" id="L212">                .designation(item.getDesignation())</span>
+<span class="nc" id="L213">                .barcode(item.getBarcode())</span>
+<span class="nc" id="L214">                .requestedQuantity(input.getQuantity())</span>
+<span class="nc" id="L215">                .build());</span>
+    }
+
+    @Transactional
+    private void fulfillRequest(ItemRequest itemRequest) {
+        // Check if the item request is already fulfilled
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (itemRequest.getStatus() == ItemRequestStatus.FULFILLED) {</span>
+<span class="nc" id="L222">            log.debug(&quot;Item request with ID {} is already fulfilled, skipping.&quot;, itemRequest.getId());</span>
+<span class="nc" id="L223">            return;</span>
+        }
+
+<span class="nc" id="L226">        Item item = itemRequest.getItem();</span>
+<span class="nc" id="L227">        validateItemQuantities(item);</span>
+
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (!canFulfillRequest(item, itemRequest.getRequestedQuantity())) {</span>
+<span class="nc" id="L230">            throw new InsufficientQuantityException(itemRequest.getRequestedQuantity(), item.getAvailableQuantity());</span>
+        }
+
+<span class="nc" id="L233">        LocalDate returnDate = LocalDate.now().plusDays(30);</span>
+
+        // Create loan first - if this fails, the transaction will roll back
+<span class="nc" id="L236">        createLoanForRequest(itemRequest, returnDate);</span>
+
+        // Update item quantity - this now happens exactly once
+<span class="nc" id="L239">        log.debug(&quot;Calling updateItemQuantity for item: {} with requestedQuantity: {}&quot;, item.getId(), itemRequest.getRequestedQuantity());</span>
+<span class="nc" id="L240">        updateItemQuantity(item, itemRequest.getRequestedQuantity());</span>
+<span class="nc" id="L241">        log.debug(&quot;Completed updateItemQuantity for item: {}&quot;, item.getId());</span>
+        // Update request status to fulfilled
+<span class="nc" id="L243">        itemRequest.setStatus(ItemRequestStatus.FULFILLED);</span>
+<span class="nc" id="L244">        itemRequest.setReturnDate(returnDate);</span>
+<span class="nc" id="L245">        itemRequestRepository.save(itemRequest);</span>
+
+        // Send fulfillment notification
+<span class="nc" id="L248">        notificationService.sendRequestFulfillmentNotification(</span>
+<span class="nc" id="L249">                itemRequest.getUser(),</span>
+<span class="nc" id="L250">                itemRequest.getItem(),</span>
+<span class="nc" id="L251">                itemRequest.getRequestedQuantity(),</span>
+                returnDate
+        );
+<span class="nc" id="L254">    }</span>
+
+    private ItemRequest createAndSaveInitialRequest(ItemRequestDto input, User user, Item item) {
+<span class="nc" id="L257">        LocalDate now = LocalDate.now();</span>
+<span class="nc" id="L258">        ItemRequest itemRequest = ItemRequest.builder()</span>
+<span class="nc" id="L259">                .user(user)</span>
+<span class="nc" id="L260">                .item(item)</span>
+<span class="nc" id="L261">                .requestedQuantity(input.getQuantity())</span>
+<span class="nc" id="L262">                .requestDate(now)</span>
+<span class="nc" id="L263">                .returnDate(now.plusDays(30))</span>
+<span class="nc" id="L264">                .queuePosition(getNextQueuePosition(item))</span>
+<span class="nc" id="L265">                .status(ItemRequestStatus.PENDING)</span>
+<span class="nc" id="L266">                .build();</span>
+
+<span class="nc" id="L268">        return itemRequestRepository.save(itemRequest);</span>
+    }
+
+    private void updateItemQuantity(Item item, int requestedQuantity) {
+<span class="nc" id="L272">        int newAvailableQuantity = item.getAvailableQuantity() - requestedQuantity;</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (newAvailableQuantity &lt; 0) {</span>
+<span class="nc" id="L274">            log.error(&quot;Attempted operation would result in negative available quantity. Item: {}, Requested: {}, Available: {}&quot;,</span>
+<span class="nc" id="L275">                    item.getId(), requestedQuantity, item.getAvailableQuantity());</span>
+<span class="nc" id="L276">            throw new InvalidQuantityException(&quot;Operation would result in negative quantity&quot;);</span>
+        }
+
+<span class="nc" id="L279">        item.setAvailableQuantity(newAvailableQuantity);</span>
+<span class="nc" id="L280">        itemRepository.save(item);</span>
+
+<span class="nc" id="L282">        log.debug(&quot;Updated available quantity for item: {} - New Available: {}&quot;, item.getId(), newAvailableQuantity);</span>
+<span class="nc" id="L283">    }</span>
+
+    private void validateRequestQuantity(int requestedQuantity) {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (requestedQuantity &lt;= 0) {</span>
+<span class="nc" id="L287">            throw new InvalidQuantityException(&quot;Requested quantity must be greater than 0&quot;);</span>
+        }
+<span class="nc" id="L289">    }</span>
+
+    private User findAndValidateUser(String currentUserEmail) {
+<span class="nc" id="L292">        return userRepository.findByEmail(currentUserEmail)</span>
+<span class="nc" id="L293">                .orElseThrow(() -&gt; new UserNotFoundException(&quot;Currently authenticated user not found XIXIXIXIXI in database: &quot; + currentUserEmail));</span>
+    }
+
+    private void validateItemQuantities(Item item) {
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        if (item.getAvailableQuantity() &gt; item.getTotalQuantity()) {</span>
+<span class="nc" id="L298">            throw new InvalidQuantityException(&quot;Available quantity cannot exceed total quantity&quot;);</span>
+        }
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (item.getAvailableQuantity() &lt; 0) {</span>
+<span class="nc" id="L301">            throw new InvalidQuantityException(&quot;Available quantity cannot be negative&quot;);</span>
+        }
+<span class="nc" id="L303">    }</span>
+
+    private void validateAvailableQuantity(int requestedQuantity, Item item) {
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (requestedQuantity &gt; item.getTotalQuantity()) {</span>
+<span class="nc" id="L307">            throw new InsufficientQuantityException(</span>
+<span class="nc" id="L308">                    String.format(&quot;Requested quantity (%d) exceeds total item quantity (%d)&quot;,</span>
+<span class="nc" id="L309">                            requestedQuantity, item.getTotalQuantity()));</span>
+        }
+<span class="nc" id="L311">    }</span>
+
+    private boolean canFulfillRequest(Item item, int requestedQuantity) {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        boolean canFulfill = item.getAvailableQuantity() &gt;= requestedQuantity;</span>
+<span class="nc" id="L315">        log.debug(&quot;Checking fulfillment for item: {} - Requested: {}, Available: {}, Can Fulfill: {}&quot;,</span>
+<span class="nc" id="L316">                item.getId(), requestedQuantity, item.getAvailableQuantity(), canFulfill);</span>
+<span class="nc" id="L317">        return canFulfill;</span>
+    }
+
+    private void createLoanForRequest(ItemRequest itemRequest, LocalDate returnDate) {
+        try {
+<span class="nc" id="L322">            loanService.createLoan(</span>
+<span class="nc" id="L323">                    itemRequest.getUser().getId(),</span>
+<span class="nc" id="L324">                    itemRequest.getItem().getId(),</span>
+<span class="nc" id="L325">                    itemRequest.getRequestedQuantity(),</span>
+<span class="nc" id="L326">                    LocalDate.now(),</span>
+                    returnDate
+            );
+<span class="nc" id="L329">        } catch (Exception e) {</span>
+<span class="nc" id="L330">            throw new LoanCreationException(&quot;Failed to create loan&quot;, e);</span>
+<span class="nc" id="L331">        }</span>
+<span class="nc" id="L332">    }</span>
+
+    private Integer getNextQueuePosition(Item item) {
+<span class="nc" id="L335">        return itemRequestRepository.findMaxQueuePositionForItem(item.getId())</span>
+<span class="nc" id="L336">                .map(pos -&gt; pos + 1)</span>
+<span class="nc" id="L337">                .orElse(1);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

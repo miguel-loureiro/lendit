@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClientController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.controllers</a> &gt; <span class="el_source">ClientController.java</span></div><h1>ClientController.java</h1><pre class="source lang-java linenums">package com.ims.controllers;
+
+import com.ims.models.Item;
+import com.ims.models.ItemRequest;
+import com.ims.models.Loan;
+import com.ims.models.User;
+import com.ims.models.dtos.request.CreateItemDto;
+import com.ims.models.dtos.request.ItemRequestDto;
+import com.ims.models.dtos.request.ItemReturnDto;
+import com.ims.models.dtos.request.UpdateLoanDto;
+import com.ims.models.dtos.response.LoanDetailDto;
+import com.ims.models.dtos.response.LoanUpdatedDto;
+import com.ims.models.dtos.response.RequestedItemDto;
+import com.ims.models.dtos.response.ReturnedItemDto;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.UserRepository;
+import com.ims.services.ItemRequestService;
+import com.ims.services.LoanService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping(&quot;/client&quot;)
+@RequiredArgsConstructor
+public class ClientController {
+
+    private final ItemRequestService itemRequestService;
+    private final LoanService loanService;
+    private final UserRepository userRepository;
+    private final ItemRepository itemRepository;
+
+    @PostMapping(&quot;/item/request&quot;)
+    public ResponseEntity&lt;RequestedItemDto&gt; requestItem(@RequestBody ItemRequestDto input) {
+<span class="nc" id="L38">        return itemRequestService.createItemRequest(input);</span>
+    }
+
+    @PutMapping(&quot;/item/return&quot;)
+    public ResponseEntity&lt;ReturnedItemDto&gt; returnItem(@RequestBody ItemReturnDto input) {
+<span class="nc" id="L43">        return itemRequestService.returnItem(input);</span>
+    }
+
+    @GetMapping(&quot;/loan/list&quot;)
+    public ResponseEntity&lt;List&lt;LoanDetailDto&gt;&gt; getActiveAndExtendedLoans() {
+<span class="nc" id="L48">        List&lt;LoanDetailDto&gt; loans = loanService.getActiveAndExtendedLoansForCurrentUser ();</span>
+<span class="nc" id="L49">        return ResponseEntity.ok(loans);</span>
+    }
+
+    @PutMapping(&quot;/loan/extend/{id}&quot;)
+    public ResponseEntity&lt;LoanUpdatedDto&gt; extendLoan(@RequestParam Integer id,  @RequestBody UpdateLoanDto input) {
+<span class="nc" id="L54">        LoanUpdatedDto newLoan = loanService.extendLoan(id, input.getNewReturnDate());</span>
+<span class="nc" id="L55">        return ResponseEntity.ok(newLoan);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

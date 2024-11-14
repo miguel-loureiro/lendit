@@ -1,0 +1,44 @@
+-------------------------------------------------------------------------------
+Test set: com.ims.services.ItemServiceTest
+-------------------------------------------------------------------------------
+Tests run: 12, Failures: 2, Errors: 1, Skipped: 0, Time elapsed: 0.045 s <<< FAILURE! -- in com.ims.services.ItemServiceTest
+com.ims.services.ItemServiceTest.testDeleteItem_ItemHasActiveLoan -- Time elapsed: 0.002 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalStateException> but was: <java.lang.NullPointerException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.ims.services.ItemServiceTest.testDeleteItem_ItemHasActiveLoan(ItemServiceTest.java:259)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: java.lang.NullPointerException: Cannot invoke "com.ims.repository.ItemRequestRepository.findByItemAndStatusIn(com.ims.models.Item, java.util.List)" because "this.itemRequestRepository" is null
+	at com.ims.services.ItemService.deleteItem(ItemService.java:122)
+	at com.ims.services.ItemServiceTest.lambda$testDeleteItem_ItemHasActiveLoan$6(ItemServiceTest.java:259)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+
+com.ims.services.ItemServiceTest.testDeleteItem_Success -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "com.ims.repository.ItemRequestRepository.findByItemAndStatusIn(com.ims.models.Item, java.util.List)" because "this.itemRequestRepository" is null
+	at com.ims.services.ItemService.deleteItem(ItemService.java:122)
+	at com.ims.services.ItemServiceTest.testDeleteItem_Success(ItemServiceTest.java:230)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.ims.services.ItemServiceTest.testDeleteItem_ItemHasPendingRequests -- Time elapsed: 0.002 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalStateException> but was: <java.lang.NullPointerException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.ims.services.ItemServiceTest.testDeleteItem_ItemHasPendingRequests(ItemServiceTest.java:273)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: java.lang.NullPointerException: Cannot invoke "com.ims.repository.ItemRequestRepository.findByItemAndStatusIn(com.ims.models.Item, java.util.List)" because "this.itemRequestRepository" is null
+	at com.ims.services.ItemService.deleteItem(ItemService.java:122)
+	at com.ims.services.ItemServiceTest.lambda$testDeleteItem_ItemHasPendingRequests$7(ItemServiceTest.java:273)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+

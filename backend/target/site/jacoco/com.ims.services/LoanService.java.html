@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoanService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.services</a> &gt; <span class="el_source">LoanService.java</span></div><h1>LoanService.java</h1><pre class="source lang-java linenums">package com.ims.services;
+
+import com.ims.exceptions.InvalidLoanStateException;
+import com.ims.exceptions.InvalidQuantityException;
+import com.ims.exceptions.LoanNotFoundException;
+import com.ims.exceptions.ServiceException;
+import com.ims.models.*;
+import com.ims.models.dtos.response.LoanDetailDto;
+import com.ims.models.dtos.response.LoanUpdatedDto;
+import com.ims.repository.ItemRepository;
+import com.ims.repository.LoanRepository;
+import com.ims.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+<span class="fc" id="L27">@Slf4j</span>
+public class LoanService {
+
+    private final LoanRepository loanRepository;
+    private final UserRepository userRepository;
+    private final ItemRepository itemRepository;
+
+    /**
+     * Retrieves all active and extended loans for the current user.
+     *
+     * @return List of loans that are either active or extended
+     */
+    public List&lt;LoanDetailDto&gt; getActiveAndExtendedLoansForCurrentUser () {
+<span class="fc" id="L40">        String currentUsername = getCurrentUsernameString();</span>
+
+<span class="fc" id="L42">        User user = userRepository.findByUsername(currentUsername)</span>
+<span class="pc" id="L43">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;User  not found&quot;));</span>
+
+<span class="fc" id="L45">        List&lt;Loan&gt; loans = loanRepository.findActiveAndExtendedLoansByUser (user, List.of(LoanStatus.ACTIVE, LoanStatus.EXTENDED));</span>
+
+        // Map Loan entities to LoanDetailDto
+<span class="fc" id="L48">        return loans.stream()</span>
+<span class="fc" id="L49">                .map(this::mapToLoanDetailDto)</span>
+<span class="fc" id="L50">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Finds an active loan for a specific user and item.
+     * A loan is considered active if it has not been returned and has not expired.
+     *
+     * @param userId The ID of the user who borrowed the item
+     * @param itemId The ID of the borrowed item
+     * @return Optional containing the active loan if found, empty otherwise
+     */
+    public Optional&lt;Loan&gt; findActiveLoan(Integer userId, Integer itemId) {
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        if (userId == null || itemId == null) {</span>
+<span class="fc" id="L63">            throw new IllegalArgumentException(&quot;User ID and Item ID must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L66">        return loanRepository.findByUserIdAndItemIdAndReturnDateIsNullAndEndDateGreaterThanEqual(</span>
+                userId,
+                itemId,
+<span class="fc" id="L69">                LocalDate.now()</span>
+        );
+    }
+
+    /**
+     * Finds all active loans that are due for return on the specified date.
+     *
+     * @param returnDate The date for which to find loans due for return
+     * @param statuses List of loan statuses that are considered active
+     * @return List of loans that are active and due for return on the specified date
+     */
+    public List&lt;Loan&gt; findActiveLoansByReturnDate(LocalDate returnDate, List&lt;LoanStatus&gt; statuses) {
+<span class="nc" id="L81">        return loanRepository.findActiveLoansByReturnDate(returnDate, statuses);</span>
+    }
+
+    public void createLoan(Integer userId, Integer itemId, Integer requestedQuantity, LocalDate startDate, LocalDate endDate) {
+<span class="fc" id="L85">        User user = userRepository.findById(userId)</span>
+<span class="fc" id="L86">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;User not found&quot;));</span>
+<span class="fc" id="L87">        Item item = itemRepository.findById(itemId)</span>
+<span class="pc" id="L88">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Item not found&quot;));</span>
+
+<span class="fc" id="L90">            Loan loan = new Loan(user, item, requestedQuantity, startDate, endDate);</span>
+<span class="fc" id="L91">            item.addActiveLoan(loan);</span>
+<span class="fc" id="L92">        loanRepository.save(loan);</span>
+<span class="fc" id="L93">    }</span>
+
+    /**
+     * Closes a loan by setting its return date to the current date.
+     * Validates the loan exists and is active before closing.
+     *
+     * @param loanId The ID of the loan to close
+     * @throws LoanNotFoundException     if the loan doesn't exist
+     * @throws InvalidLoanStateException if the loan is already closed
+     */
+    @Transactional
+    public void endLoan(Integer loanId) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (loanId == null) {</span>
+<span class="nc" id="L106">            throw new IllegalArgumentException(&quot;Loan ID must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L109">        Loan loan = loanRepository.findById(loanId)</span>
+<span class="pc" id="L110">                .orElseThrow(() -&gt; new LoanNotFoundException(&quot;Loan not found with ID: &quot; + loanId));</span>
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (loan.getReturnDate() != null) {</span>
+<span class="fc" id="L113">            throw new InvalidLoanStateException(&quot;Loan is already closed&quot;);</span>
+        }
+
+<span class="fc" id="L116">        loan.setReturnDate(LocalDate.now());</span>
+<span class="fc" id="L117">        loan.setStatus(LoanStatus.RETURNED);</span>
+
+        try {
+<span class="fc" id="L120">            loanRepository.save(loan);</span>
+<span class="fc" id="L121">            log.debug(&quot;Successfully closed loan with ID: {}&quot;, loanId);</span>
+<span class="nc" id="L122">        } catch (Exception e) {</span>
+<span class="nc" id="L123">            log.error(&quot;Failed to close loan with ID: {}&quot;, loanId, e);</span>
+<span class="nc" id="L124">            throw new ServiceException(&quot;Failed to close loan&quot;, e);</span>
+<span class="fc" id="L125">        }</span>
+<span class="fc" id="L126">        createLoanUpdatedDto(loan);</span>
+<span class="fc" id="L127">    }</span>
+
+    public LoanUpdatedDto extendLoan(Integer loanId, LocalDate newEndDate) {
+<span class="fc" id="L130">        Loan loan = loanRepository.findById(loanId)</span>
+<span class="pc" id="L131">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Loan not found&quot;));</span>
+
+        // Update the loan end date and extension count
+<span class="fc" id="L134">        loan.setPreviousExtendedDate(loan.getEndDate());</span>
+<span class="fc" id="L135">        loan.setEndDate(newEndDate);</span>
+<span class="fc" id="L136">        loan.setExtensionCount(loan.getExtensionCount() + 1);</span>
+<span class="fc" id="L137">        loanRepository.save(loan);</span>
+<span class="fc" id="L138">        return createLoanUpdatedDto(loan);</span>
+    }
+
+    /**
+     * Updates the quantity of items in an active loan.
+     * Validates the loan exists, is active, and the new quantity is valid.
+     *
+     * @param loanId The ID of the loan to update
+     * @param newQuantity The new quantity for the loan
+     * @throws LoanNotFoundException if the loan doesn't exist
+     * @throws InvalidLoanStateException if the loan is already closed
+     * @throws InvalidQuantityException if the new quantity is invalid
+     */
+    @Transactional
+    public void updateLoanQuantity(Integer loanId, int newQuantity) {
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (loanId == null) {</span>
+<span class="nc" id="L154">            throw new IllegalArgumentException(&quot;Loan ID must not be null&quot;);</span>
+        }
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (newQuantity &lt; 0) {</span>
+<span class="fc" id="L158">            throw new InvalidQuantityException(&quot;New quantity cannot be negative&quot;);</span>
+        }
+
+<span class="fc" id="L161">        Loan loan = loanRepository.findById(loanId)</span>
+<span class="pc" id="L162">                .orElseThrow(() -&gt; new LoanNotFoundException(&quot;Loan not found with ID: &quot; + loanId));</span>
+
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (loan.getReturnDate() != null) {</span>
+<span class="nc" id="L165">            throw new InvalidLoanStateException(&quot;Cannot update quantity of a closed loan&quot;);</span>
+        }
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (newQuantity == 0) {</span>
+<span class="fc" id="L169">            endLoan(loanId);</span>
+<span class="fc" id="L170">            return;</span>
+        }
+
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (newQuantity &gt; loan.getQuantity()) {</span>
+<span class="nc" id="L174">            throw new InvalidQuantityException(</span>
+<span class="nc" id="L175">                    String.format(&quot;New quantity (%d) cannot be greater than original quantity (%d)&quot;,</span>
+<span class="nc" id="L176">                            newQuantity, loan.getQuantity()));</span>
+        }
+
+<span class="fc" id="L179">        loan.setQuantity(newQuantity);</span>
+
+        try {
+<span class="fc" id="L182">            loanRepository.save(loan);</span>
+<span class="fc" id="L183">            log.debug(&quot;Successfully updated quantity for loan ID: {} to {}&quot;, loanId, newQuantity);</span>
+<span class="nc" id="L184">        } catch (Exception e) {</span>
+<span class="nc" id="L185">            log.error(&quot;Failed to update quantity for loan ID: {}&quot;, loanId, e);</span>
+<span class="nc" id="L186">            throw new ServiceException(&quot;Failed to update loan quantity&quot;, e);</span>
+<span class="fc" id="L187">        }</span>
+<span class="fc" id="L188">    }</span>
+
+    private LoanUpdatedDto createLoanUpdatedDto(Loan loan) {
+<span class="fc" id="L191">        LocalDate returnDate = loan.getReturnDate();</span>
+<span class="fc" id="L192">        return LoanUpdatedDto.builder()</span>
+<span class="fc" id="L193">                .itemDesignation(loan.getItem().getDesignation())</span>
+<span class="fc" id="L194">                .username(loan.getUser().getUsername())</span>
+<span class="fc" id="L195">                .startDate(loan.getStartDate())</span>
+<span class="fc" id="L196">                .endDate(loan.getEndDate())</span>
+<span class="fc" id="L197">                .status(loan.getStatus())</span>
+<span class="fc" id="L198">                .returnDate(returnDate)</span>
+<span class="fc" id="L199">                .build();</span>
+    }
+
+    private static String getCurrentUsernameString() {
+<span class="fc" id="L203">        String username = SecurityContextHolder.getContext()</span>
+<span class="fc" id="L204">                .getAuthentication()</span>
+<span class="fc" id="L205">                .getName();</span>
+<span class="fc" id="L206">        return username;</span>
+    }
+
+    private LoanDetailDto mapToLoanDetailDto(Loan loan) {
+<span class="fc" id="L210">        LoanDetailDto dto = new LoanDetailDto();</span>
+<span class="fc" id="L211">        dto.setId(loan.getId());</span>
+<span class="fc" id="L212">        dto.setItemDesignation(loan.getItem().getDesignation());</span>
+<span class="fc" id="L213">        dto.setItemBarcode(loan.getItem().getBarcode());</span>
+<span class="fc" id="L214">        dto.setStartDate(loan.getStartDate());</span>
+<span class="fc" id="L215">        dto.setEndDate(loan.getEndDate());</span>
+<span class="fc" id="L216">        dto.setInitialEndDate(loan.getInitialEndDate());</span>
+<span class="fc" id="L217">        dto.setStatus(loan.getStatus());</span>
+<span class="fc" id="L218">        dto.setPreviousExtendedDate(loan.getPreviousExtendedDate());</span>
+<span class="fc" id="L219">        dto.setReturnDate(loan.getReturnDate());</span>
+<span class="fc" id="L220">        dto.setExtensionCount(loan.getExtensionCount());</span>
+<span class="fc" id="L221">        dto.setQuantity(loan.getQuantity());</span>
+<span class="fc" id="L222">        return dto;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

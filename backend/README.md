@@ -179,8 +179,8 @@ Non-blocking error handling
 
 To use this service, add the following to your application.properties (optional, these are the default values):
 ```
-# Reminder schedule (default is 9:00 AM daily)
-notification.schedule.reminders=0 0 9 * * ?
+# Reminder schedule (default is 10:00 AM daily)
+notification.schedule.reminders=0 0 10 * * ?
 
 # Async executor configuration (optional, can override defaults)
 notification.async.core-pool-size=2

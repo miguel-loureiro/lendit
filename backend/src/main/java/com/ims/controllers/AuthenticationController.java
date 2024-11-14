@@ -1,7 +1,9 @@
 package com.ims.controllers;
 
 import com.ims.models.dtos.request.LoginUserDto;
+import com.ims.models.dtos.request.SignupUserDto;
 import com.ims.models.dtos.response.LoginResponse;
+import com.ims.models.dtos.response.UserSignedDto;
 import com.ims.repository.UserRepository;
 import com.ims.security.JwtService;
 import com.ims.services.AuthenticationService;
@@ -26,5 +28,10 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginUserDto request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid SignupUserDto request) {
+        return ResponseEntity.ok(authService.signup(request));
     }
 }

@@ -46,20 +46,20 @@ class AuthenticationServiceTest {
 
     @BeforeEach
     void setUp() {
-        validLoginRequest = new LoginUserDto("test@example.com", "Password123@");
-        user = new User("testUser", "test@example.com", "encodedPassword", Role.CLIENT);
+        validLoginRequest = new LoginUserDto("testuser1", "Password123@");
+        user = new User("testuser1", "encodedPassword", Role.CLIENT);
         user.setId(1);
     }
 
     @Test
     void login_WithValidCredentials_ShouldReturnLoginResponse() {
         // Arrange
-        when(userRepository.findByEmail(validLoginRequest.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(validLoginRequest.getUsername())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(validLoginRequest.getPassword(), user.getPassword())).thenReturn(true);
 
         // Create a specific instance of UsernamePasswordAuthenticationToken
         UsernamePasswordAuthenticationToken authRequest =
-                new UsernamePasswordAuthenticationToken(validLoginRequest.getEmail(), validLoginRequest.getPassword());
+                new UsernamePasswordAuthenticationToken(validLoginRequest.getUsername(), validLoginRequest.getPassword());
 
         Authentication authentication = mock(Authentication.class);
         when(authenticationManager.authenticate(authRequest)).thenReturn(authentication);
@@ -76,7 +76,7 @@ class AuthenticationServiceTest {
         assertEquals(user.getUsername(), response.getUsername());
         assertEquals(user.getRole(), response.getRole());
 
-        verify(userRepository).findByEmail(validLoginRequest.getEmail());
+        verify(userRepository).findByEmail(validLoginRequest.getUsername());
         verify(passwordEncoder).matches(validLoginRequest.getPassword(), user.getPassword());
         verify(authenticationManager).authenticate(authRequest);
         verify(jwtService).generateToken(user);
@@ -85,7 +85,7 @@ class AuthenticationServiceTest {
     @Test
     void login_WithInvalidPassword_ShouldThrowBadCredentialsException() {
         // Arrange
-        when(userRepository.findByEmail(validLoginRequest.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(validLoginRequest.getUsername())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(validLoginRequest.getPassword(), user.getPassword())).thenReturn(false);
 
         // Act & Assert
@@ -95,7 +95,7 @@ class AuthenticationServiceTest {
         );
 
         assertEquals("Invalid credentials", exception.getMessage());
-        verify(userRepository).findByEmail(validLoginRequest.getEmail());
+        verify(userRepository).findByEmail(validLoginRequest.getUsername());
         verify(passwordEncoder).matches(validLoginRequest.getPassword(), user.getPassword());
         verifyNoInteractions(authenticationManager, jwtService);
     }
@@ -103,7 +103,7 @@ class AuthenticationServiceTest {
     @Test
     void login_WithNonexistentUser_ShouldThrowBadCredentialsException() {
         // Arrange
-        when(userRepository.findByEmail(validLoginRequest.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(validLoginRequest.getUsername())).thenReturn(Optional.empty());
 
         // Act & Assert
         BadCredentialsException exception = assertThrows(
@@ -112,14 +112,14 @@ class AuthenticationServiceTest {
         );
 
         assertEquals("Invalid credentials", exception.getMessage());
-        verify(userRepository).findByEmail(validLoginRequest.getEmail());
+        verify(userRepository).findByEmail(validLoginRequest.getUsername());
         verifyNoInteractions(passwordEncoder, authenticationManager, jwtService);
     }
 
     @Test
     void login_WithUnexpectedException_ShouldThrowAuthenticationServiceException() {
         // Arrange
-        when(userRepository.findByEmail(validLoginRequest.getEmail()))
+        when(userRepository.findByEmail(validLoginRequest.getUsername()))
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act & Assert
@@ -130,7 +130,7 @@ class AuthenticationServiceTest {
 
         assertEquals("Authentication failed", exception.getMessage());
         assertInstanceOf(RuntimeException.class, exception.getCause());
-        verify(userRepository).findByEmail(validLoginRequest.getEmail());
+        verify(userRepository).findByEmail(validLoginRequest.getUsername());
         verifyNoInteractions(passwordEncoder, authenticationManager, jwtService);
     }
 }

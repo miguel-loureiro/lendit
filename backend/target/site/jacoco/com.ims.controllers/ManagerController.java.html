@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagerController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.ims.controllers</a> &gt; <span class="el_source">ManagerController.java</span></div><h1>ManagerController.java</h1><pre class="source lang-java linenums">package com.ims.controllers;
+
+import com.ims.models.Item;
+import com.ims.models.dtos.request.*;
+import com.ims.models.dtos.response.*;
+import com.ims.services.ItemService;
+import com.ims.services.LoanService;
+import com.ims.services.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+
+@RestController
+@RequestMapping(&quot;/manager&quot;)
+@RequiredArgsConstructor
+public class ManagerController {
+
+    private final ItemService itemService;
+    private final UserService userService;
+    private final LoanService loanService;
+
+    @GetMapping(&quot;/items&quot;)
+    public ResponseEntity&lt;?&gt; getAvailableItems(@RequestParam(name = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                                               @RequestParam(name = &quot;size&quot;, defaultValue = &quot;10&quot;) int size) throws IOException {
+<span class="nc" id="L28">        return itemService.getAllItems(page, size);</span>
+    }
+
+    @PostMapping(&quot;/items/new&quot;)
+    public ResponseEntity&lt;Item&gt; createItem(@RequestBody CreateItemDto createItemDto) {
+<span class="nc" id="L33">        return itemService.createItem(createItemDto);</span>
+    }
+
+    @PutMapping(&quot;/items/update/{id}&quot;)
+    public ResponseEntity&lt;ItemUpdatedDto&gt; updateItem(@PathVariable Integer id, @RequestBody UpdateItemDto updateDto) {
+<span class="nc" id="L38">        return itemService.updateItem(id, updateDto);</span>
+    }
+
+    @DeleteMapping(&quot;/items/delete/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteItem(@PathVariable Integer id) {
+<span class="nc" id="L43">        return itemService.deleteItem(id);</span>
+    }
+
+    /*
+    @PutMapping(&quot;loans/extend/{id}&quot;)
+    public ResponseEntity&lt;LoanUpdatedDto&gt; extendLoan(@PathVariable Integer id, @RequestBody ExtendLoanDto input) {
+        LoanUpdatedDto loanUpdatedDto = loanService.extendLoan(id, input.getNewEndDate());
+        return ResponseEntity.ok(loanUpdatedDto);
+    }
+
+    @PutMapping(&quot;loans/end/{id}&quot;)
+    public ResponseEntity&lt;LoanUpdatedDto&gt; endLoan(@PathVariable Integer id) {
+        LoanUpdatedDto loanUpdatedDto = loanService.endLoan(id);
+        return ResponseEntity.ok(loanUpdatedDto);
+    }
+*/
+    @PostMapping(&quot;/clients/new&quot;)
+    public ResponseEntity&lt;UserCreatedDto&gt; createClient(@RequestBody CreateUserDto createClientDto) {
+<span class="nc" id="L61">        UserCreatedDto clientCreatedDto = userService.createUser(createClientDto);</span>
+<span class="nc" id="L62">        return ResponseEntity.status(HttpStatus.CREATED).body(clientCreatedDto);</span>
+    }
+
+    @PutMapping(&quot;/clients/update/{id}&quot;)
+    public ResponseEntity&lt;UserUpdatedDto&gt; updateClient(@PathVariable Integer id, @RequestBody UpdateUserDto updateUserDto) {
+<span class="nc" id="L67">        UserUpdatedDto userUpdatedDto = userService.updateUser(id, updateUserDto);</span>
+<span class="nc" id="L68">        return ResponseEntity.status(HttpStatus.CREATED).body(userUpdatedDto);</span>
+    }
+
+    @DeleteMapping(&quot;/clients/delete/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteClient(@PathVariable Integer id) {
+<span class="nc" id="L73">        return userService.deleteUser (id);</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
