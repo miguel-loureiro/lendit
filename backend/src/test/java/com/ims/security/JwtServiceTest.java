@@ -34,7 +34,7 @@ public class JwtServiceTest {
     @Mock
     private User mockUser;
 
-    private static final String TEST_EMAIL = "test@example.com";
+    private static final String TEST_USERNAME = "testuser99";
     private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
     private static final long JWT_EXPIRATION = 86400000; // 1 day in milliseconds
 
@@ -46,25 +46,25 @@ public class JwtServiceTest {
     }
 
     @Test
-    void extractEmail_ShouldReturnCorrectEmail() {
+    void extractUsername_ShouldReturnCorrectUsername() {
         String token = jwtService.generateToken(mockUser);
-        String extractedEmail = jwtService.extractEmail(token);
-        when(mockUser.getEmail()).thenReturn(TEST_EMAIL);
-        assertEquals(TEST_EMAIL, extractedEmail);
+        String extractedUsername = jwtService.extractUsername(token);
+        when(mockUser.getUsername()).thenReturn(TEST_USERNAME);
+        assertEquals(TEST_USERNAME, extractedUsername);
     }
 
     @Test
     void extractClaim_ShouldReturnCorrectClaim() {
         String token = jwtService.generateToken(mockUser);
         String subject = jwtService.extractClaim(token, Claims::getSubject);
-        when(mockUser.getEmail()).thenReturn(TEST_EMAIL);
-        assertEquals(TEST_EMAIL, subject);
+        when(mockUser.getUsername()).thenReturn(TEST_USERNAME);
+        assertEquals(TEST_USERNAME, subject);
     }
 
     @Test
     void validateToken_WithValidToken_ShouldReturnTrue() {
         String token = jwtService.generateToken(mockUser);
-        UserDetails userDetails = new User(TEST_EMAIL, "password", Collections.emptyList());
+        UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
         assertTrue(jwtService.validateToken(token, userDetails));
     }
 
@@ -81,7 +81,7 @@ public class JwtServiceTest {
             e.printStackTrace();
         }
 
-        UserDetails userDetails = new User(TEST_EMAIL, "password", Collections.emptyList());
+        UserDetails userDetails = new User(TEST_USERNAME, "password", Collections.emptyList());
         assertFalse(jwtService.validateToken(token, userDetails));
     }
 
@@ -113,7 +113,7 @@ public class JwtServiceTest {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        assertEquals(TEST_EMAIL, claims.getSubject());
+        assertEquals(TEST_USERNAME, claims.getSubject());
         assertNotNull(claims.getIssuedAt());
         assertNotNull(claims.getExpiration());
         assertTrue(claims.getExpiration().after(new Date()));

@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.ims.services.EmailServiceTest
 -------------------------------------------------------------------------------
-Tests run: 9, Failures: 4, Errors: 3, Skipped: 0, Time elapsed: 0.148 s <<< FAILURE! -- in com.ims.services.EmailServiceTest
-com.ims.services.EmailServiceTest.sendHtmlMessage_InvalidHtmlContent_ThrowsException -- Time elapsed: 0.127 s <<< FAILURE!
+Tests run: 9, Failures: 4, Errors: 3, Skipped: 0, Time elapsed: 0.149 s <<< FAILURE! -- in com.ims.services.EmailServiceTest
+com.ims.services.EmailServiceTest.sendHtmlMessage_InvalidHtmlContent_ThrowsException -- Time elapsed: 0.129 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Expected java.lang.IllegalArgumentException to be thrown, but nothing was thrown.
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
@@ -13,7 +13,7 @@ org.opentest4j.AssertionFailedError: Expected java.lang.IllegalArgumentException
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.EmailServiceTest.sendSimpleMessage_EmailSenderThrowsException_PropagatesException -- Time elapsed: 0.002 s <<< ERROR!
+com.ims.services.EmailServiceTest.sendSimpleMessage_EmailSenderThrowsException_PropagatesException -- Time elapsed: 0.001 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -66,7 +66,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.EmailServiceTest.sendHtmlMessage_EmailSenderThrowsException_PropagatesException -- Time elapsed: 0.002 s <<< ERROR!
+com.ims.services.EmailServiceTest.sendHtmlMessage_EmailSenderThrowsException_PropagatesException -- Time elapsed: 0.001 s <<< ERROR!
 org.mockito.exceptions.base.MockitoException: 
 
 Checked exception is invalid for this method!

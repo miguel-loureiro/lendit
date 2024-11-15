@@ -1,4 +1,58 @@
 -------------------------------------------------------------------------------
 Test set: com.ims.services.AuthenticationServiceTest
 -------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.082 s -- in com.ims.services.AuthenticationServiceTest
+Tests run: 4, Failures: 3, Errors: 1, Skipped: 0, Time elapsed: 0.082 s <<< FAILURE! -- in com.ims.services.AuthenticationServiceTest
+com.ims.services.AuthenticationServiceTest.login_WithValidCredentials_ShouldReturnLoginResponse -- Time elapsed: 0.070 s <<< ERROR!
+org.springframework.security.authentication.BadCredentialsException: Invalid credentials
+	at com.ims.services.AuthenticationService.login(AuthenticationService.java:71)
+	at com.ims.services.AuthenticationServiceTest.login_WithValidCredentials_ShouldReturnLoginResponse(AuthenticationServiceTest.java:69)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.ims.services.AuthenticationServiceTest.login_WithUnexpectedException_ShouldThrowAuthenticationServiceException -- Time elapsed: 0.001 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <org.springframework.security.authentication.AuthenticationServiceException> but was: <org.springframework.security.authentication.BadCredentialsException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.ims.services.AuthenticationServiceTest.login_WithUnexpectedException_ShouldThrowAuthenticationServiceException(AuthenticationServiceTest.java:126)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: org.springframework.security.authentication.BadCredentialsException: Invalid credentials
+	at com.ims.services.AuthenticationService.login(AuthenticationService.java:71)
+	at com.ims.services.AuthenticationServiceTest.lambda$login_WithUnexpectedException_ShouldThrowAuthenticationServiceException$2(AuthenticationServiceTest.java:128)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+
+com.ims.services.AuthenticationServiceTest.login_WithNonexistentUser_ShouldThrowBadCredentialsException -- Time elapsed: 0.007 s <<< FAILURE!
+Wanted but not invoked:
+userRepository.findByEmail("testuser1");
+-> at com.ims.services.AuthenticationServiceTest.login_WithNonexistentUser_ShouldThrowBadCredentialsException(AuthenticationServiceTest.java:115)
+
+However, there was exactly 1 interaction with this mock:
+userRepository.findByUsername("testuser1");
+-> at com.ims.services.AuthenticationService.login(AuthenticationService.java:36)
+
+
+	at com.ims.services.AuthenticationServiceTest.login_WithNonexistentUser_ShouldThrowBadCredentialsException(AuthenticationServiceTest.java:115)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.ims.services.AuthenticationServiceTest.login_WithInvalidPassword_ShouldThrowBadCredentialsException -- Time elapsed: 0.001 s <<< FAILURE!
+Wanted but not invoked:
+userRepository.findByEmail("testuser1");
+-> at com.ims.services.AuthenticationServiceTest.login_WithInvalidPassword_ShouldThrowBadCredentialsException(AuthenticationServiceTest.java:98)
+
+However, there was exactly 1 interaction with this mock:
+userRepository.findByUsername("testuser1");
+-> at com.ims.services.AuthenticationService.login(AuthenticationService.java:36)
+
+
+	at com.ims.services.AuthenticationServiceTest.login_WithInvalidPassword_ShouldThrowBadCredentialsException(AuthenticationServiceTest.java:98)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

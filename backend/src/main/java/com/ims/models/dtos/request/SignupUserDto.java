@@ -14,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class SignupUserDto {
 
-
+    @NotEmpty
     @Size(min = 2, max = 100, message = "The length of full name must be between 2 and 100 characters.")
     private String username;
     @NotEmpty(message = "Email is required")

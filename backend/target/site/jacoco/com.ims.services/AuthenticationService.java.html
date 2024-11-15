@@ -30,108 +30,114 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(LoginUserDto loginRequest) {
-<span class="fc" id="L33">        log.info(&quot;Starting authentication process for email: {}&quot;, loginRequest.getUsername());</span>
+<span class="fc" id="L33">        log.info(&quot;Starting authentication process for username: {}&quot;, loginRequest.getUsername());</span>
         try {
             // First verify the user exists
-<span class="fc" id="L36">            User user = userRepository.findByEmail(loginRequest.getUsername())</span>
-<span class="fc" id="L37">                    .orElseThrow(() -&gt; new BadCredentialsException(&quot;Invalid credentials&quot;));</span>
+<span class="fc" id="L36">            User user = userRepository.findByUsername(loginRequest.getUsername())</span>
+<span class="pc" id="L37">                    .orElseThrow(() -&gt; new BadCredentialsException(&quot;Invalid credentials&quot;));</span>
 
-<span class="fc" id="L39">            log.info(&quot;User found in database: {}&quot;, user.getUsername());</span>
+<span class="nc" id="L39">            log.info(&quot;User found in database: {}&quot;, user.getUsername());</span>
 
             // Verify password manually first
-<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {</span>
-<span class="fc" id="L43">                log.error(&quot;Password doesn't match for user: {}&quot;, user.getEmail());</span>
-<span class="fc" id="L44">                throw new BadCredentialsException(&quot;Invalid credentials&quot;);</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {</span>
+<span class="nc" id="L43">                log.error(&quot;Password doesn't match for user: {}&quot;, user.getEmail());</span>
+<span class="nc" id="L44">                throw new BadCredentialsException(&quot;Invalid credentials&quot;);</span>
             }
 
             // Perform the authentication
-<span class="fc" id="L48">            Authentication authentication = authenticationManager.authenticate(</span>
+<span class="nc" id="L48">            Authentication authentication = authenticationManager.authenticate(</span>
                     new UsernamePasswordAuthenticationToken(
-<span class="fc" id="L50">                            loginRequest.getUsername(),</span>
-<span class="fc" id="L51">                            loginRequest.getPassword()</span>
+<span class="nc" id="L50">                            loginRequest.getUsername(),</span>
+<span class="nc" id="L51">                            loginRequest.getPassword()</span>
                     )
             );
 
-<span class="fc" id="L55">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="nc" id="L55">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
 
-<span class="fc" id="L57">            String jwt = jwtService.generateToken(user);</span>
+<span class="nc" id="L57">            String jwt = jwtService.generateToken(user);</span>
 
-<span class="fc" id="L59">            log.info(&quot;Authentication successful for user: {}&quot;, user.getEmail());</span>
+<span class="nc" id="L59">            log.info(&quot;Authentication successful for user: {}&quot;, user.getUsername());</span>
 
-<span class="fc" id="L61">            return LoginResponse.builder()</span>
-<span class="fc" id="L62">                    .token(jwt)</span>
-<span class="fc" id="L63">                    .id(user.getId())</span>
-<span class="fc" id="L64">                    .email(user.getEmail())</span>
-<span class="fc" id="L65">                    .username(user.getUsername())</span>
-<span class="fc" id="L66">                    .role(user.getRole())</span>
-<span class="fc" id="L67">                    .build();</span>
+<span class="nc" id="L61">            return LoginResponse.builder()</span>
+<span class="nc" id="L62">                    .token(jwt)</span>
+<span class="nc" id="L63">                    .id(user.getId())</span>
+<span class="nc" id="L64">                    .email(user.getUsername())</span>
+<span class="nc" id="L65">                    .username(user.getUsername())</span>
+<span class="nc" id="L66">                    .role(user.getRole())</span>
+<span class="nc" id="L67">                    .build();</span>
 
 <span class="fc" id="L69">        } catch (BadCredentialsException e) {</span>
 <span class="fc" id="L70">            log.error(&quot;Authentication failed for user: {}&quot;, loginRequest.getUsername());</span>
 <span class="fc" id="L71">            throw new BadCredentialsException(&quot;Invalid credentials&quot;);</span>
-<span class="fc" id="L72">        } catch (Exception e) {</span>
-<span class="fc" id="L73">            log.error(&quot;Unexpected error during authentication&quot;, e);</span>
-<span class="fc" id="L74">            throw new AuthenticationServiceException(&quot;Authentication failed&quot;, e);</span>
+<span class="nc" id="L72">        } catch (Exception e) {</span>
+<span class="nc" id="L73">            log.error(&quot;Unexpected error during authentication&quot;, e);</span>
+<span class="nc" id="L74">            throw new AuthenticationServiceException(&quot;Authentication failed&quot;, e);</span>
         }
     }
 
     public LoginResponse signup(SignupUserDto signupRequest) {
 <span class="nc" id="L79">        log.info(&quot;Starting signup process for email: {}&quot;, signupRequest.getEmail());</span>
         try {
-            // Check if user already exists with the given email
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {</span>
-<span class="nc" id="L83">                log.error(&quot;User already exists with email: {}&quot;, signupRequest.getEmail());</span>
+            // Check if user already exists with the given username
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if(userRepository.findByUsername(signupRequest.getUsername()).isPresent()){</span>
+<span class="nc" id="L83">                log.error(&quot;User already exists with username: {}&quot;, signupRequest.getUsername());</span>
 <span class="nc" id="L84">                throw new IllegalArgumentException(&quot;Email already registered&quot;);</span>
             }
 
+            // Check if user already exists with the given email
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {</span>
+<span class="nc" id="L89">                log.error(&quot;User already exists with email: {}&quot;, signupRequest.getEmail());</span>
+<span class="nc" id="L90">                throw new IllegalArgumentException(&quot;Email already registered&quot;);</span>
+            }
+
             // Create new user entity
-<span class="nc" id="L88">            User user = new User(</span>
-<span class="nc" id="L89">                    signupRequest.getUsername(),</span>
-<span class="nc" id="L90">                    signupRequest.getEmail(),</span>
-<span class="nc" id="L91">                    passwordEncoder.encode(signupRequest.getPassword()),</span>
+<span class="nc" id="L94">            User user = new User(</span>
+<span class="nc" id="L95">                    signupRequest.getUsername(),</span>
+<span class="nc" id="L96">                    signupRequest.getEmail(),</span>
+<span class="nc" id="L97">                    passwordEncoder.encode(signupRequest.getPassword()),</span>
                     Role.CLIENT
             );
 
             // Set profile image if provided
-<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (signupRequest.getProfileImage() != null) {</span>
-<span class="nc" id="L97">                user.setProfileImage(signupRequest.getProfileImage());</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (signupRequest.getProfileImage() != null) {</span>
+<span class="nc" id="L103">                user.setProfileImage(signupRequest.getProfileImage());</span>
             }
 
             // Save the user
-<span class="nc" id="L101">            User savedUser = userRepository.save(user);</span>
-<span class="nc" id="L102">            log.info(&quot;User successfully created with email: {}&quot;, savedUser.getEmail());</span>
+<span class="nc" id="L107">            User savedUser = userRepository.save(user);</span>
+<span class="nc" id="L108">            log.info(&quot;User successfully created with email: {}&quot;, savedUser.getEmail());</span>
 
             // Perform login
-<span class="nc" id="L105">            Authentication authentication = authenticationManager.authenticate(</span>
+<span class="nc" id="L111">            Authentication authentication = authenticationManager.authenticate(</span>
                     new UsernamePasswordAuthenticationToken(
-<span class="nc" id="L107">                            signupRequest.getEmail(),</span>
-<span class="nc" id="L108">                            signupRequest.getPassword()</span>
+<span class="nc" id="L113">                            signupRequest.getEmail(),</span>
+<span class="nc" id="L114">                            signupRequest.getPassword()</span>
                     )
             );
-<span class="nc" id="L111">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="nc" id="L117">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
 
             // Generate JWT token
-<span class="nc" id="L114">            String jwt = jwtService.generateToken(savedUser);</span>
-<span class="nc" id="L115">            log.info(&quot;Authentication successful for new user: {}&quot;, savedUser.getEmail());</span>
+<span class="nc" id="L120">            String jwt = jwtService.generateToken(savedUser);</span>
+<span class="nc" id="L121">            log.info(&quot;Authentication successful for new user: {}&quot;, savedUser.getEmail());</span>
 
             // Return login response with token
-<span class="nc" id="L118">            return LoginResponse.builder()  // Assuming LoginResponse still uses builder pattern</span>
-<span class="nc" id="L119">                    .token(jwt)</span>
-<span class="nc" id="L120">                    .id(savedUser.getId())</span>
-<span class="nc" id="L121">                    .email(savedUser.getEmail())</span>
-<span class="nc" id="L122">                    .username(savedUser.getUsername())</span>
-<span class="nc" id="L123">                    .role(savedUser.getRole())</span>
-<span class="nc" id="L124">                    .build();</span>
+<span class="nc" id="L124">            return LoginResponse.builder()  // Assuming LoginResponse still uses builder pattern</span>
+<span class="nc" id="L125">                    .token(jwt)</span>
+<span class="nc" id="L126">                    .id(savedUser.getId())</span>
+<span class="nc" id="L127">                    .email(savedUser.getUsername())</span>
+<span class="nc" id="L128">                    .username(savedUser.getUsername())</span>
+<span class="nc" id="L129">                    .role(savedUser.getRole())</span>
+<span class="nc" id="L130">                    .build();</span>
 
-<span class="nc" id="L126">        } catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L127">            log.error(&quot;Signup failed: {}&quot;, e.getMessage());</span>
-<span class="nc" id="L128">            throw e;</span>
-<span class="nc" id="L129">        } catch (BadCredentialsException e) {</span>
-<span class="nc" id="L130">            log.error(&quot;Authentication failed after signup for user: {}&quot;, signupRequest.getEmail());</span>
-<span class="nc" id="L131">            throw new BadCredentialsException(&quot;Authentication failed after signup&quot;);</span>
-<span class="nc" id="L132">        } catch (Exception e) {</span>
-<span class="nc" id="L133">            log.error(&quot;Unexpected error during signup/login&quot;, e);</span>
-<span class="nc" id="L134">            throw new AuthenticationServiceException(&quot;Signup/Login failed&quot;, e);</span>
+<span class="nc" id="L132">        } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L133">            log.error(&quot;Signup failed: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L134">            throw e;</span>
+<span class="nc" id="L135">        } catch (BadCredentialsException e) {</span>
+<span class="nc" id="L136">            log.error(&quot;Authentication failed after signup for user: {}&quot;, signupRequest.getEmail());</span>
+<span class="nc" id="L137">            throw new BadCredentialsException(&quot;Authentication failed after signup&quot;);</span>
+<span class="nc" id="L138">        } catch (Exception e) {</span>
+<span class="nc" id="L139">            log.error(&quot;Unexpected error during signup/login&quot;, e);</span>
+<span class="nc" id="L140">            throw new AuthenticationServiceException(&quot;Signup/Login failed&quot;, e);</span>
         }
     }
 }

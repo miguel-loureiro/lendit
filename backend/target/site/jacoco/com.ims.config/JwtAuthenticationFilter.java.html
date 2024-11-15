@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 <span class="nc" id="L36">        final String authHeader = request.getHeader(&quot;Authorization&quot;);</span>
         final String jwt;
-        final String userEmail;
+        final String username;
 
 <span class="nc bnc" id="L40" title="All 4 branches missed.">        if (authHeader == null || !authHeader.startsWith(&quot;Bearer &quot;)) {</span>
 <span class="nc" id="L41">            filterChain.doFilter(request, response);</span>
@@ -43,10 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
 <span class="nc" id="L45">        jwt = authHeader.substring(7);</span>
-<span class="nc" id="L46">        userEmail = jwtService.extractEmail(jwt);</span>
+<span class="nc" id="L46">        username = jwtService.extractUsername(jwt);</span>
 
-<span class="nc bnc" id="L48" title="All 6 branches missed.">        if (userEmail != null &amp;&amp; (SecurityContextHolder.getContext().getAuthentication() == null || !isExpectedAuthentication(SecurityContextHolder.getContext().getAuthentication()))) {</span>
-<span class="nc" id="L49">            UserDetails userDetails = this.customUserDetailsService.loadUserByUsername(userEmail);</span>
+<span class="nc bnc" id="L48" title="All 6 branches missed.">        if (username != null &amp;&amp; (SecurityContextHolder.getContext().getAuthentication() == null || !isExpectedAuthentication(SecurityContextHolder.getContext().getAuthentication()))) {</span>
+<span class="nc" id="L49">            UserDetails userDetails = this.customUserDetailsService.loadUserByUsername(username);</span>
 <span class="nc bnc" id="L50" title="All 2 branches missed.">            if (jwtService.validateToken(jwt, userDetails)) {</span>
 <span class="nc" id="L51">                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(</span>
                         userDetails,

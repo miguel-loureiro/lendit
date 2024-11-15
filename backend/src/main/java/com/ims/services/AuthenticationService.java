@@ -30,10 +30,10 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(LoginUserDto loginRequest) {
-        log.info("Starting authentication process for email: {}", loginRequest.getUsername());
+        log.info("Starting authentication process for username: {}", loginRequest.getUsername());
         try {
             // First verify the user exists
-            User user = userRepository.findByEmail(loginRequest.getUsername())
+            User user = userRepository.findByUsername(loginRequest.getUsername())
                     .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
             log.info("User found in database: {}", user.getUsername());
@@ -56,7 +56,7 @@ public class AuthenticationService {
 
             String jwt = jwtService.generateToken(user);
 
-            log.info("Authentication successful for user: {}", user.getEmail());
+            log.info("Authentication successful for user: {}", user.getUsername());
 
             return LoginResponse.builder()
                     .token(jwt)
@@ -76,8 +76,14 @@ public class AuthenticationService {
     }
 
     public LoginResponse signup(SignupUserDto signupRequest) {
-        log.info("Starting signup process for email: {}", signupRequest.getEmail());
+        log.info("Starting signup process for username: {}", signupRequest.getUsername());
         try {
+            // Check if user already exists with the given username
+            if(userRepository.findByUsername(signupRequest.getUsername()).isPresent()){
+                log.error("User already exists with username: {}", signupRequest.getUsername());
+                throw new IllegalArgumentException("Email already registered");
+            }
+
             // Check if user already exists with the given email
             if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {
                 log.error("User already exists with email: {}", signupRequest.getEmail());
@@ -104,7 +110,7 @@ public class AuthenticationService {
             // Perform login
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            signupRequest.getEmail(),
+                            signupRequest.getUsername(),
                             signupRequest.getPassword()
                     )
             );
@@ -112,7 +118,7 @@ public class AuthenticationService {
 
             // Generate JWT token
             String jwt = jwtService.generateToken(savedUser);
-            log.info("Authentication successful for new user: {}", savedUser.getEmail());
+            log.info("Authentication successful for new user: {}", savedUser.getUsername());
 
             // Return login response with token
             return LoginResponse.builder()  // Assuming LoginResponse still uses builder pattern

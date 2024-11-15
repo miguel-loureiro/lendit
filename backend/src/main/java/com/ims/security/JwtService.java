@@ -21,7 +21,7 @@ public class JwtService {
     @Value("${security.jwt.expiration}")
     long jwtExpiration;
 
-    public String extractEmail(String jwtToken) {
+    public String extractUsername(String jwtToken) {
         return extractClaim(jwtToken, Claims::getSubject);
     }
 
@@ -40,7 +40,7 @@ public class JwtService {
     }
 
     public boolean validateToken(String jwtToken, UserDetails userDetails) {
-        final String email = extractEmail(jwtToken);
+        final String email = extractUsername(jwtToken);
         return email.equals(userDetails.getUsername()) && !isTokenExpired(jwtToken);
     }
 
@@ -60,9 +60,9 @@ public class JwtService {
         return jwtExpiration;
     }
 
-    private String createToken(String email) {
+    private String createToken(String username) {
         return Jwts.builder()
-                .subject(email)
+                .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())

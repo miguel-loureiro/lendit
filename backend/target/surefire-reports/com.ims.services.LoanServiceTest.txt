@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.ims.services.LoanServiceTest
 -------------------------------------------------------------------------------
-Tests run: 11, Failures: 0, Errors: 10, Skipped: 0, Time elapsed: 0.107 s <<< FAILURE! -- in com.ims.services.LoanServiceTest
-com.ims.services.LoanServiceTest.findActiveLoan_NullParameters_ThrowsException -- Time elapsed: 0.088 s <<< ERROR!
+Tests run: 11, Failures: 0, Errors: 10, Skipped: 0, Time elapsed: 0.098 s <<< FAILURE! -- in com.ims.services.LoanServiceTest
+com.ims.services.LoanServiceTest.findActiveLoan_NullParameters_ThrowsException -- Time elapsed: 0.078 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -15,7 +15,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.updateLoanQuantity_Success -- Time elapsed: 0.003 s <<< ERROR!
+com.ims.services.LoanServiceTest.updateLoanQuantity_Success -- Time elapsed: 0.002 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -28,7 +28,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.findActiveLoan_Success -- Time elapsed: 0.001 s <<< ERROR!
+com.ims.services.LoanServiceTest.findActiveLoan_Success -- Time elapsed: 0.002 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -41,7 +41,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.createLoan_UserNotFound_ThrowsException -- Time elapsed: 0.001 s <<< ERROR!
+com.ims.services.LoanServiceTest.createLoan_UserNotFound_ThrowsException -- Time elapsed: 0.002 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -67,7 +67,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.updateLoanQuantity_ZeroQuantity_EndsLoan -- Time elapsed: 0.002 s <<< ERROR!
+com.ims.services.LoanServiceTest.updateLoanQuantity_ZeroQuantity_EndsLoan -- Time elapsed: 0.001 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -80,7 +80,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.endLoan_AlreadyClosed_ThrowsException -- Time elapsed: 0.001 s <<< ERROR!
+com.ims.services.LoanServiceTest.endLoan_AlreadyClosed_ThrowsException -- Time elapsed: 0.002 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -93,7 +93,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.createLoan_Success -- Time elapsed: 0.001 s <<< ERROR!
+com.ims.services.LoanServiceTest.createLoan_Success -- Time elapsed: 0.002 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.
@@ -120,7 +120,7 @@ Please remove unnecessary stubbings or use 'lenient' strictness. More info: java
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.LoanServiceTest.endLoan_Success -- Time elapsed: 0.002 s <<< ERROR!
+com.ims.services.LoanServiceTest.endLoan_Success -- Time elapsed: 0.001 s <<< ERROR!
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 
 Unnecessary stubbings detected.

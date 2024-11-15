@@ -21,7 +21,7 @@ import java.util.function.Function;
     @Value(&quot;${security.jwt.expiration}&quot;)
     long jwtExpiration;
 
-    public String extractEmail(String jwtToken) {
+    public String extractUsername(String jwtToken) {
 <span class="fc" id="L25">        return extractClaim(jwtToken, Claims::getSubject);</span>
     }
 
@@ -40,7 +40,7 @@ import java.util.function.Function;
     }
 
     public boolean validateToken(String jwtToken, UserDetails userDetails) {
-<span class="fc" id="L43">        final String email = extractEmail(jwtToken);</span>
+<span class="fc" id="L43">        final String email = extractUsername(jwtToken);</span>
 <span class="nc bnc" id="L44" title="All 4 branches missed.">        return email.equals(userDetails.getUsername()) &amp;&amp; !isTokenExpired(jwtToken);</span>
     }
 
@@ -60,9 +60,9 @@ import java.util.function.Function;
 <span class="fc" id="L60">        return jwtExpiration;</span>
     }
 
-    private String createToken(String email) {
+    private String createToken(String username) {
 <span class="fc" id="L64">        return Jwts.builder()</span>
-<span class="fc" id="L65">                .subject(email)</span>
+<span class="fc" id="L65">                .subject(username)</span>
 <span class="fc" id="L66">                .issuedAt(new Date(System.currentTimeMillis()))</span>
 <span class="fc" id="L67">                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))</span>
 <span class="fc" id="L68">                .signWith(getSigningKey())</span>

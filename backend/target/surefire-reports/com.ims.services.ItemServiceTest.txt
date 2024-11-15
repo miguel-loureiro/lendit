@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.ims.services.ItemServiceTest
 -------------------------------------------------------------------------------
-Tests run: 12, Failures: 2, Errors: 1, Skipped: 0, Time elapsed: 0.045 s <<< FAILURE! -- in com.ims.services.ItemServiceTest
-com.ims.services.ItemServiceTest.testDeleteItem_ItemHasActiveLoan -- Time elapsed: 0.002 s <<< FAILURE!
+Tests run: 12, Failures: 2, Errors: 1, Skipped: 0, Time elapsed: 0.044 s <<< FAILURE! -- in com.ims.services.ItemServiceTest
+com.ims.services.ItemServiceTest.testDeleteItem_ItemHasActiveLoan -- Time elapsed: 0.001 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalStateException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
@@ -26,7 +26,7 @@ java.lang.NullPointerException: Cannot invoke "com.ims.repository.ItemRequestRep
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-com.ims.services.ItemServiceTest.testDeleteItem_ItemHasPendingRequests -- Time elapsed: 0.002 s <<< FAILURE!
+com.ims.services.ItemServiceTest.testDeleteItem_ItemHasPendingRequests -- Time elapsed: 0.001 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalStateException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
